@@ -4,12 +4,23 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Send, Bot } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import useAppStore from '@/stores/main'
+import { useAuth } from '@/hooks/use-auth'
+import pb from '@/lib/pocketbase/client'
+
+type Message = { id: string; role: 'user' | 'ai'; content: string }
 
 export default function Mentor() {
-  const { messages, addMessage, user } = useAppStore()
+  const { user } = useAuth()
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'init',
+      role: 'ai',
+      content:
+        'Olá! Sou seu Mentor IA Fernando Fontes. Como posso guiar sua jornada de metacognição hoje?',
+    },
+  ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -20,41 +31,36 @@ export default function Mentor() {
     }
   }, [messages])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() || isLoading) return
     const userText = input.trim()
-
-    addMessage({
-      id: Date.now().toString(),
-      role: 'user',
-      content: userText,
-      date: new Date().toISOString(),
-    })
     setInput('')
+
+    const newUserMsg: Message = { id: Date.now().toString(), role: 'user', content: userText }
+    setMessages((prev) => [...prev, newUserMsg])
     setIsLoading(true)
 
-    // Simulate AI response logic
-    setTimeout(() => {
-      const lower = userText.toLowerCase()
-      let aiResponse =
-        'Excelente reflexão. No Método Leão Dourado, buscamos entender a raiz da inhaca mental. Como você pode transformar essa constatação em uma microação palpável para as próximas 24 horas?'
-
-      if (lower.includes('suporte') || lower.includes('preço') || lower.includes('pagamento')) {
-        aiResponse =
-          'Não tenho permissão para tratar deste assunto. Por favor, envie sua dúvida ao suporte ou diretamente ao Mentor Fernando Fontes.'
-      } else if (lower.includes('procrastinação')) {
-        aiResponse =
-          'A procrastinação é a principal fonte de inhaca mental. Lembre-se do que vimos no módulo de Guardião: a disciplina quebra a resistência. Qual a menor ação possível que você pode fazer agora mesmo?'
-      }
-
-      addMessage({
-        id: Date.now().toString(),
-        role: 'ai',
-        content: aiResponse,
-        date: new Date().toISOString(),
+    try {
+      const res = await pb.send('/backend/v1/search/mentor', {
+        method: 'POST',
+        body: JSON.stringify({ query: userText }),
       })
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), role: 'ai', content: res.reply },
+      ])
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: 'ai',
+          content: 'Tivemos um pequeno bloqueio mental de comunicação. Pode repetir?',
+        },
+      ])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   return (

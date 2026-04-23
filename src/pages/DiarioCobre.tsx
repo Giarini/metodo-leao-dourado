@@ -1,45 +1,72 @@
-import { useState, useMemo } from 'react'
-import { format, differenceInDays } from 'date-fns'
+import { useState, useEffect } from 'react'
+import { format } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Info, AlertTriangle } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import useAppStore from '@/stores/main'
+import { getDiaries, createDiary } from '@/services/diaries'
+import { useAuth } from '@/hooks/use-auth'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function DiarioCobre() {
-  const { entries, addEntry } = useAppStore()
-  const { toast } = useToast()
+  const [entries, setEntries] = useState<any[]>([])
   const [content, setContent] = useState('')
-  const [action, setAction] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPrompt, setShowPrompt] = useState(false)
+  const { toast } = useToast()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const loadData = async () => {
+    try {
+      const records = await getDiaries()
+      setEntries(records.filter((r) => r.type === 'cobre'))
+    } catch {
+      /* intentionally ignored */
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('diaries', loadData)
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const cobres = entries.filter((e) => e.type === 'cobre')
+  const todayEntry = entries.find((e) => e.date.startsWith(todayStr))
 
-  const todayEntry = cobres.find((e) => e.date === todayStr)
-
-  const lastEntry = useMemo(() => {
-    if (!cobres.length) return null
-    return [...cobres].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-  }, [cobres])
-
-  const missingDays = lastEntry ? differenceInDays(new Date(), new Date(lastEntry.date)) : 0
-  const showMissingAlert = !lastEntry || missingDays > 7
-
-  const handleSave = () => {
-    if (!content.trim() || !action.trim()) return
-    addEntry({
-      id: Date.now().toString(),
-      type: 'cobre',
-      date: todayStr,
-      content,
-      action,
-    })
-    toast({
-      title: 'Ajuste de Rota Salvo',
-      description: 'Falha mapeada e ação definida. Siga em frente!',
-    })
+  const handleSave = async () => {
+    if (!content.trim()) return
+    setIsLoading(true)
+    try {
+      await createDiary({
+        user: user.id,
+        type: 'cobre',
+        date: new Date().toISOString(),
+        content,
+      })
+      toast({
+        title: 'Falha Registrada',
+        description: 'O mapeamento da sua inhaca mental foi salvo.',
+      })
+      setContent('')
+      setShowPrompt(true)
+    } catch (e) {
+      toast({ title: 'Erro ao salvar', variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -55,17 +82,6 @@ export default function DiarioCobre() {
           <p className="text-slate-400">Mapeamento de inhacas mentais e ajustes.</p>
         </div>
       </div>
-
-      {showMissingAlert && !todayEntry && (
-        <Alert className="bg-[#B87333]/10 border-[#B87333]/50 text-[#B87333]">
-          <Info className="w-5 h-5 text-[#B87333]" />
-          <AlertTitle className="text-lg">Tudo bem por aí?</AlertTitle>
-          <AlertDescription className="text-base text-slate-300">
-            Olá, vi que não teve anotações recentemente. Caso não tenha tido falhas, que bom! Mas se
-            teve, anote agora, mesmo que pequena, e defina uma microação.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <Card className="bg-black/40 backdrop-blur-xl border-[#B87333]/30">
         <CardHeader>
@@ -87,12 +103,6 @@ export default function DiarioCobre() {
                   {todayEntry.content}
                 </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-[#B87333] font-semibold">Microação em 24h:</h3>
-                <div className="p-4 bg-black/60 rounded-lg border border-[#B87333]/20 text-slate-300 whitespace-pre-wrap">
-                  {todayEntry.action}
-                </div>
-              </div>
               <p className="text-sm text-[#B87333] italic text-center">
                 Registro salvo e imutável para a data de hoje.
               </p>
@@ -103,32 +113,41 @@ export default function DiarioCobre() {
                 placeholder="Escreva seu relato aqui..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="min-h-[120px] bg-black/50 border-[#B87333]/30 focus-visible:ring-[#B87333] text-white text-base resize-none"
+                className="min-h-[160px] bg-black/50 border-[#B87333]/30 focus-visible:ring-[#B87333] text-white text-base resize-none"
               />
-
-              <div className="pt-4 border-t border-[#B87333]/20 space-y-4">
-                <h3 className="text-lg font-serif text-[#B87333]">
-                  Já sabe qual a microação deverá fazer em 24 horas para corrigir isso?
-                </h3>
-                <Textarea
-                  placeholder="Defina sua ação corretiva imediata..."
-                  value={action}
-                  onChange={(e) => setAction(e.target.value)}
-                  className="min-h-[80px] bg-black/50 border-[#B87333]/30 focus-visible:ring-[#B87333] text-white text-base resize-none"
-                />
-              </div>
 
               <Button
                 onClick={handleSave}
-                disabled={!content.trim() || !action.trim()}
+                disabled={!content.trim() || isLoading}
                 className="w-full md:w-auto px-8 bg-[#B87333] text-white font-bold hover:bg-[#965A28] text-lg"
               >
-                Salvar e Assumir Compromisso
+                {isLoading ? 'Salvando...' : 'Salvar Reflexão'}
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showPrompt} onOpenChange={setShowPrompt}>
+        <AlertDialogContent className="bg-black/90 border-[#B87333] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-serif text-[#B87333]">
+              Ação Imediata
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-300 text-base">
+              Já sabe qual a microação deverá fazer em 24 horas para corrigir isso?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => navigate('/agenda')}
+              className="bg-[#B87333] text-white hover:bg-[#965A28]"
+            >
+              Definir Microação na Agenda
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

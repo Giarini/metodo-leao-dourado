@@ -2,16 +2,20 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Lock, Unlock, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function Levels() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const userLevel = user?.unlocked_level || 1
 
   const levels = [
-    { id: 1, name: 'Aluno', description: 'Fundamentos e Inhaca Mental', locked: false },
-    { id: 2, name: 'Guardião', description: 'Proteção e Disciplina', locked: true },
-    { id: 3, name: 'Instrutor', description: 'Transmissão do Conhecimento', locked: true },
-    { id: 4, name: 'Mestre', description: 'Domínio Metacognitivo', locked: true },
-    { id: 5, name: 'Soberano', description: 'Excelência Absoluta', locked: true },
+    { id: 1, name: 'Aluno', description: 'Fundamentos e Inhaca Mental', locked: userLevel < 1 },
+    { id: 2, name: 'Guardião', description: 'Proteção e Disciplina', locked: userLevel < 2 },
+    { id: 3, name: 'Instrutor', description: 'Transmissão do Conhecimento', locked: userLevel < 3 },
+    { id: 4, name: 'Mestre', description: 'Domínio Metacognitivo', locked: userLevel < 4 },
+    { id: 5, name: 'Soberano', description: 'Excelência Absoluta', locked: userLevel < 5 },
   ]
 
   return (

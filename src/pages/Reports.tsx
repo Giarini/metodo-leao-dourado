@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   ChartContainer,
@@ -7,13 +7,28 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from '@/components/ui/chart'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis } from 'recharts'
 import { BarChart as BarChartIcon } from 'lucide-react'
 import { format, subDays } from 'date-fns'
-import useAppStore from '@/stores/main'
+import { getDiaries } from '@/services/diaries'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function Reports() {
-  const { entries } = useAppStore()
+  const [entries, setEntries] = useState<any[]>([])
+
+  const loadData = async () => {
+    try {
+      const records = await getDiaries()
+      setEntries(records)
+    } catch {
+      /* intentionally ignored */
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+  useRealtime('diaries', loadData)
 
   const dataPie = useMemo(() => {
     return [
@@ -26,13 +41,13 @@ export default function Reports() {
     ]
   }, [entries])
 
-  const dataBar = useMemo(() => {
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = format(subDays(new Date(), 6 - i), 'yyyy-MM-dd')
+  const dataLine = useMemo(() => {
+    return Array.from({ length: 14 }).map((_, i) => {
+      const d = format(subDays(new Date(), 13 - i), 'yyyy-MM-dd')
       return {
         date: format(new Date(d), 'dd/MM'),
-        dourado: entries.filter((e) => e.type === 'dourado' && e.date === d).length,
-        cobre: entries.filter((e) => e.type === 'cobre' && e.date === d).length,
+        dourado: entries.filter((e) => e.type === 'dourado' && e.date.startsWith(d)).length,
+        cobre: entries.filter((e) => e.type === 'cobre' && e.date.startsWith(d)).length,
       }
     })
   }, [entries])
@@ -95,13 +110,13 @@ export default function Reports() {
 
         <Card className="bg-black/40 backdrop-blur-xl border-[#D4AF37]/30">
           <CardHeader>
-            <CardTitle className="text-white">Atividade nos Últimos 7 Dias</CardTitle>
-            <CardDescription className="text-slate-400">Entradas por dia</CardDescription>
+            <CardTitle className="text-white">Evolução Diária (14 dias)</CardTitle>
+            <CardDescription className="text-slate-400">Cruzamento de Registros</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dataBar} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <LineChart data={dataLine} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                   <XAxis
                     dataKey="date"
                     stroke="#64748b"
@@ -117,9 +132,9 @@ export default function Reports() {
                     allowDecimals={false}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="dourado" fill="#D4AF37" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cobre" fill="#B87333" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Line type="monotone" dataKey="dourado" stroke="#D4AF37" strokeWidth={3} />
+                  <Line type="monotone" dataKey="cobre" stroke="#B87333" strokeWidth={3} />
+                </LineChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -128,7 +143,7 @@ export default function Reports() {
 
       <Card className="bg-black/40 backdrop-blur-xl border-white/10">
         <CardHeader>
-          <CardTitle className="text-white">Últimos Registros Chronológicos</CardTitle>
+          <CardTitle className="text-white">Últimos Registros</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

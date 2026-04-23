@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, subDays } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -6,33 +6,58 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Info, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import useAppStore from '@/stores/main'
+import { getDiaries, createDiary } from '@/services/diaries'
+import { useAuth } from '@/hooks/use-auth'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function DiarioDourado() {
-  const { entries, addEntry } = useAppStore()
-  const { toast } = useToast()
+  const [entries, setEntries] = useState<any[]>([])
   const [content, setContent] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+  const { user } = useAuth()
+
+  const loadData = async () => {
+    try {
+      const records = await getDiaries()
+      setEntries(records.filter((r) => r.type === 'dourado'))
+    } catch {
+      /* intentionally ignored */
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('diaries', loadData)
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const dourados = entries.filter((e) => e.type === 'dourado')
-
-  const todayEntry = dourados.find((e) => e.date === todayStr)
-
   const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd')
-  const hasYesterdayEntry = dourados.some((e) => e.date === yesterdayStr)
 
-  const handleSave = () => {
+  const todayEntry = entries.find((e) => e.date.startsWith(todayStr))
+  const hasYesterdayEntry = entries.some((e) => e.date.startsWith(yesterdayStr))
+
+  const handleSave = async () => {
     if (!content.trim()) return
-    addEntry({
-      id: Date.now().toString(),
-      type: 'dourado',
-      date: todayStr,
-      content,
-    })
-    toast({
-      title: 'Registro Imutável Salvo',
-      description: 'Seu diário de hoje foi fechado com sucesso. Excelente evolução!',
-    })
+    setIsLoading(true)
+    try {
+      await createDiary({
+        user: user.id,
+        type: 'dourado',
+        date: new Date().toISOString(),
+        content,
+      })
+      toast({
+        title: 'Registro Imutável Salvo',
+        description: 'Seu diário de hoje foi fechado com sucesso. Excelente evolução!',
+      })
+      setContent('')
+    } catch (e) {
+      toast({ title: 'Erro ao salvar registro', variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -90,10 +115,10 @@ export default function DiarioDourado() {
               />
               <Button
                 onClick={handleSave}
-                disabled={!content.trim()}
+                disabled={!content.trim() || isLoading}
                 className="w-full md:w-auto px-8 bg-[#D4AF37] text-black font-bold hover:bg-[#AA8A2A] text-lg"
               >
-                Salvar Relato Definitivo
+                {isLoading ? 'Salvando...' : 'Salvar Relato Definitivo'}
               </Button>
             </div>
           )}
