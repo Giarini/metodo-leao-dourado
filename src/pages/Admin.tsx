@@ -96,16 +96,31 @@ export default function Admin() {
   }
 
   const handleAddKnowledge = async () => {
-    if (!knowledgeContent.trim()) return
+    const contentToSave = knowledgeContent.trim()
+    if (!contentToSave) return
     try {
+      const latest = await pb.collection('knowledge_base').getList(1, 1, { sort: '-created' })
+      if (latest.items.length > 0 && latest.items[0].content === contentToSave) {
+        toast({
+          title: 'Aviso',
+          description: 'Este conteúdo é idêntico ao último adicionado.',
+          variant: 'destructive',
+        })
+        return
+      }
+
       await pb.collection('knowledge_base').create({
-        content: knowledgeContent,
+        content: contentToSave,
         source: 'Admin Input',
       })
       toast({ title: 'Conhecimento adicionado' })
       setKnowledgeContent('')
     } catch (e) {
-      toast({ title: 'Erro ao adicionar conhecimento', variant: 'destructive' })
+      toast({
+        title: 'Erro ao adicionar conhecimento',
+        description: getErrorMessage(e),
+        variant: 'destructive',
+      })
     }
   }
 
@@ -141,6 +156,23 @@ export default function Admin() {
         variant: 'destructive',
       })
       return
+    }
+
+    try {
+      const existing = await pb.collection('knowledge_files').getList(1, 1, {
+        filter: `name = "${file.name.replace(/"/g, '\\"')}"`,
+      })
+      if (existing.items.length > 0) {
+        toast({
+          title: 'Arquivo duplicado',
+          description: 'Um arquivo com este nome já foi enviado.',
+          variant: 'destructive',
+        })
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+    } catch (e) {
+      // ignore filter error
     }
 
     setFileUploading(true)
@@ -226,11 +258,20 @@ export default function Admin() {
   const executeDeleteFile = async () => {
     if (!fileToDelete) return
     try {
+      const fileRecord = await pb.collection('knowledge_files').getOne(fileToDelete)
       await pb.collection('knowledge_files').delete(fileToDelete)
-      toast({ title: 'Sucesso', description: 'Arquivo removido com sucesso.' })
+
+      const chunks = await pb.collection('knowledge_base').getFullList({
+        filter: `source ~ "${fileRecord.name.replace(/"/g, '\\"')}"`,
+      })
+      for (const chunk of chunks) {
+        await pb.collection('knowledge_base').delete(chunk.id)
+      }
+
+      toast({ title: 'Sucesso', description: 'Arquivo e conteúdo removidos com sucesso.' })
       loadFiles()
     } catch (err) {
-      toast({ title: 'Erro', description: 'Falha ao remover o arquivo.', variant: 'destructive' })
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' })
     } finally {
       setFileToDelete(null)
     }
