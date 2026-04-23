@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { format, differenceInDays } from 'date-fns'
+import { useState } from 'react'
+import { format, subDays } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,13 +18,8 @@ export default function DiarioDourado() {
 
   const todayEntry = dourados.find((e) => e.date === todayStr)
 
-  const lastEntry = useMemo(() => {
-    if (!dourados.length) return null
-    return [...dourados].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-  }, [dourados])
-
-  const missingDays = lastEntry ? differenceInDays(new Date(), new Date(lastEntry.date)) : 0
-  const showMissingAlert = missingDays > 1
+  const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+  const hasYesterdayEntry = dourados.some((e) => e.date === yesterdayStr)
 
   const handleSave = () => {
     if (!content.trim()) return
@@ -54,13 +49,13 @@ export default function DiarioDourado() {
         </div>
       </div>
 
-      {showMissingAlert && !todayEntry && (
+      {!hasYesterdayEntry && !todayEntry && (
         <Alert className="bg-[#D4AF37]/10 border-[#D4AF37]/50 text-[#D4AF37]">
           <Info className="w-5 h-5 text-[#D4AF37]" />
-          <AlertTitle className="text-lg">Sentimos sua falta!</AlertTitle>
-          <AlertDescription className="text-base text-slate-300">
-            Olá, senti a sua falta aqui ontem (ou desde o dia{' '}
-            {format(new Date(lastEntry!.date), 'dd/MM/yyyy')}).
+          <AlertTitle className="text-lg font-bold">Sentimos sua Falta!</AlertTitle>
+          <AlertDescription className="text-base text-slate-300 mt-1">
+            Olá, senti a sua falta aqui ontem. Se teve algo importante ontem e você se lembra, pode
+            anotar agora.
           </AlertDescription>
         </Alert>
       )}
