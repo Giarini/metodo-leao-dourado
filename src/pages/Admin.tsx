@@ -14,6 +14,16 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function Admin() {
@@ -24,6 +34,7 @@ export default function Admin() {
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
   const [fileUploading, setFileUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null)
 
   const { user } = useAuth()
   const [currentPassword, setCurrentPassword] = useState('')
@@ -100,8 +111,25 @@ export default function Admin() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
     if (file.type !== 'application/pdf') {
-      toast({ title: 'Apenas arquivos PDF são permitidos', variant: 'destructive' })
+      toast({
+        title: 'Erro de Validação',
+        description: 'Apenas arquivos PDF são permitidos.',
+        variant: 'destructive',
+      })
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'Erro de Tamanho',
+        description: 'O arquivo excede o limite de 10MB.',
+        variant: 'destructive',
+      })
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
@@ -121,13 +149,20 @@ export default function Admin() {
     }
   }
 
-  const handleDeleteFile = async (id: string) => {
+  const confirmDeleteFile = (id: string) => {
+    setFileToDelete(id)
+  }
+
+  const executeDeleteFile = async () => {
+    if (!fileToDelete) return
     try {
-      await pb.collection('knowledge_files').delete(id)
-      toast({ title: 'Arquivo removido' })
+      await pb.collection('knowledge_files').delete(fileToDelete)
+      toast({ title: 'Sucesso', description: 'Arquivo removido com sucesso.' })
       loadFiles()
     } catch (err) {
-      toast({ title: 'Erro ao remover arquivo', variant: 'destructive' })
+      toast({ title: 'Erro', description: 'Falha ao remover o arquivo.', variant: 'destructive' })
+    } finally {
+      setFileToDelete(null)
     }
   }
 
@@ -299,8 +334,9 @@ export default function Admin() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDeleteFile(file.id)}
-                    className="text-slate-400 hover:text-red-400"
+                    onClick={() => confirmDeleteFile(file.id)}
+                    className="text-slate-400 hover:text-red-400 transition-colors"
+                    title="Remover arquivo"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -413,6 +449,29 @@ export default function Admin() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && setFileToDelete(null)}>
+        <AlertDialogContent className="bg-zinc-950 border-white/20 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja remover este arquivo?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Esta ação não pode ser desfeita. O arquivo será removido da base de conhecimento do
+              Mentor IA.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeDeleteFile}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Remover Arquivo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
