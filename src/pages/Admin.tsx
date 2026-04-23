@@ -149,15 +149,67 @@ export default function Admin() {
       formData.append('file', file)
       formData.append('name', file.name)
       await pb.collection('knowledge_files').create(formData)
+
       toast({
-        title: 'Arquivo enviado com sucesso!',
-        description: 'O documento está sendo processado pelo Mentor IA.',
+        title: 'Arquivo enviado!',
+        description: 'Iniciando processamento do documento...',
       })
       loadFiles()
+
+      if (!(window as any).pdfjsLib) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js'
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error('Falha ao carregar biblioteca de PDF'))
+          document.body.appendChild(script)
+        })
+      }
+
+      const pdfjsLib = (window as any).pdfjsLib
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js'
+
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+      let fullText = ''
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const textContent = await page.getTextContent()
+        const pageText = textContent.items.map((item: any) => item.str).join(' ')
+        fullText += pageText + '\n'
+      }
+
+      const cleanText = fullText.replace(/\n+/g, '\n').trim()
+
+      if (cleanText.length === 0) {
+        toast({
+          title: 'Aviso',
+          description: 'Nenhum texto foi encontrado no PDF (pode ser uma imagem).',
+          variant: 'destructive',
+        })
+      } else {
+        const chunkSize = 3000
+        for (let i = 0; i < cleanText.length; i += chunkSize) {
+          const chunk = cleanText.substring(i, i + chunkSize)
+          if (chunk.trim().length < 50) continue
+
+          await pb.collection('knowledge_base').create({
+            content: chunk,
+            source: `${file.name} (Parte ${Math.floor(i / chunkSize + 1)})`,
+          })
+        }
+
+        toast({
+          title: 'Processamento concluído',
+          description: 'O conteúdo do PDF foi adicionado à base de conhecimento.',
+        })
+      }
     } catch (err) {
       const msg = getErrorMessage(err)
       toast({
-        title: 'Erro ao enviar arquivo',
+        title: 'Erro ao processar arquivo',
         description: msg,
         variant: 'destructive',
       })
