@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import pb from '@/lib/pocketbase/client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
@@ -11,13 +11,26 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { ShieldAlert, BookOpen } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function Admin() {
   const [students, setStudents] = useState<any[]>([])
   const [pendingStudents, setPendingStudents] = useState<any[]>([])
   const [knowledgeContent, setKnowledgeContent] = useState('')
+
+  const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
+  const [fileUploading, setFileUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { user } = useAuth()
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
+
   const { toast } = useToast()
 
   const loadData = async () => {
@@ -36,8 +49,18 @@ export default function Admin() {
     }
   }
 
+  const loadFiles = async () => {
+    try {
+      const records = await pb.collection('knowledge_files').getFullList({ sort: '-created' })
+      setKnowledgeFiles(records)
+    } catch {
+      /* ignore */
+    }
+  }
+
   useEffect(() => {
     loadData()
+    loadFiles()
   }, [])
 
   const updateLevel = async (id: string, level: string) => {
@@ -71,6 +94,78 @@ export default function Admin() {
       setKnowledgeContent('')
     } catch (e) {
       toast({ title: 'Erro ao adicionar conhecimento', variant: 'destructive' })
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.type !== 'application/pdf') {
+      toast({ title: 'Apenas arquivos PDF são permitidos', variant: 'destructive' })
+      return
+    }
+
+    setFileUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('name', file.name)
+      await pb.collection('knowledge_files').create(formData)
+      toast({ title: 'Arquivo enviado com sucesso!' })
+      loadFiles()
+    } catch (err) {
+      toast({ title: 'Erro ao enviar arquivo', variant: 'destructive' })
+    } finally {
+      setFileUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteFile = async (id: string) => {
+    try {
+      await pb.collection('knowledge_files').delete(id)
+      toast({ title: 'Arquivo removido' })
+      loadFiles()
+    } catch (err) {
+      toast({ title: 'Erro ao remover arquivo', variant: 'destructive' })
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) {
+      toast({ title: 'Erro', description: 'As senhas não coincidem.', variant: 'destructive' })
+      return
+    }
+    if (newPassword.length < 8) {
+      toast({
+        title: 'Erro',
+        description: 'A nova senha deve ter pelo menos 8 caracteres.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setPasswordLoading(true)
+    try {
+      if (user) {
+        await pb.collection('users').update(user.id, {
+          oldPassword: currentPassword,
+          password: newPassword,
+          passwordConfirm: confirmPassword,
+        })
+        toast({ title: 'Senha atualizada com sucesso!' })
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao atualizar senha',
+        description: 'Verifique a senha atual e tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -151,6 +246,121 @@ export default function Admin() {
           >
             Processar Conhecimento
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-black/40 backdrop-blur-xl border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <FileText className="w-5 h-5 text-[#D4AF37]" />
+            Arquivos do Mentor IA (PDF)
+          </CardTitle>
+          <CardDescription className="text-slate-400">
+            Envie documentos PDF para treinar a base de conhecimento do Mentor IA.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={fileUploading}
+              className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333]"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {fileUploading ? 'Enviando...' : 'Enviar PDF'}
+            </Button>
+          </div>
+
+          <div className="space-y-2 mt-4">
+            {knowledgeFiles.length === 0 ? (
+              <p className="text-slate-500 italic text-sm">Nenhum arquivo enviado.</p>
+            ) : (
+              knowledgeFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between p-3 bg-black/60 border border-white/10 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-red-400" />
+                    <div>
+                      <p className="text-sm font-medium text-white">{file.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(file.created).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteFile(file.id)}
+                    className="text-slate-400 hover:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-black/40 backdrop-blur-xl border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Lock className="w-5 h-5 text-[#D4AF37]" />
+            Segurança - Alterar Senha
+          </CardTitle>
+          <CardDescription className="text-slate-400">
+            Atualize sua senha de administrador.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Senha Atual</Label>
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Nova Senha</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Confirmar Nova Senha</Label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={passwordLoading}
+              className="bg-[#D4AF37] hover:bg-[#B87333] text-black font-bold"
+            >
+              {passwordLoading ? 'Atualizando...' : 'Atualizar Senha'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

@@ -7,6 +7,7 @@ import {
   LogOut,
   Crown,
   ShieldAlert,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -28,6 +29,7 @@ export default function Layout() {
     { icon: CheckSquare, label: 'Agenda', path: '/agenda' },
     { icon: MessageSquare, label: 'Mentor', path: '/mentor' },
     { icon: BarChart, label: 'Relatórios', path: '/relatorios' },
+    { icon: Settings, label: 'Configurações', path: '/configuracoes' },
   ]
 
   if (user?.role === 'admin') {

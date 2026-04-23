@@ -16,6 +16,7 @@ import Agenda from './pages/Agenda'
 import Mentor from './pages/Mentor'
 import Reports from './pages/Reports'
 import Admin from './pages/Admin'
+import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 
 const ProtectedRoute = ({
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/mentor" element={<Mentor />} />
             <Route path="/relatorios" element={<Reports />} />
+            <Route path="/configuracoes" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
           </Route>
           <Route path="*" element={<NotFound />} />
