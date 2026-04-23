@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock } from 'lucide-react'
+import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,16 +134,33 @@ export default function Admin() {
       return
     }
 
+    if (!pb.authStore.isValid || user?.role !== 'admin') {
+      toast({
+        title: 'Não autorizado',
+        description: 'Sua sessão expirou ou você não tem permissão de administrador.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setFileUploading(true)
     try {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('name', file.name)
       await pb.collection('knowledge_files').create(formData)
-      toast({ title: 'Arquivo enviado com sucesso!' })
+      toast({
+        title: 'Arquivo enviado com sucesso!',
+        description: 'O documento está sendo processado pelo Mentor IA.',
+      })
       loadFiles()
     } catch (err) {
-      toast({ title: 'Erro ao enviar arquivo', variant: 'destructive' })
+      const msg = getErrorMessage(err)
+      toast({
+        title: 'Erro ao enviar arquivo',
+        description: msg,
+        variant: 'destructive',
+      })
     } finally {
       setFileUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -306,10 +324,19 @@ export default function Admin() {
             <Button
               onClick={() => fileInputRef.current?.click()}
               disabled={fileUploading}
-              className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333]"
+              className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333] min-w-[150px]"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              {fileUploading ? 'Enviando...' : 'Enviar PDF'}
+              {fileUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Enviar PDF
+                </>
+              )}
             </Button>
           </div>
 
