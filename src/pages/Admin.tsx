@@ -34,6 +34,7 @@ export default function Admin() {
 
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
   const [fileUploading, setFileUploading] = useState(false)
+  const [textUploading, setTextUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileToDelete, setFileToDelete] = useState<string | null>(null)
 
@@ -98,6 +99,17 @@ export default function Admin() {
   const handleAddKnowledge = async () => {
     const contentToSave = knowledgeContent.trim()
     if (!contentToSave) return
+
+    if (!pb.authStore.isValid || user?.role !== 'admin') {
+      toast({
+        title: 'Não autorizado',
+        description: 'Sua sessão expirou ou você não tem permissão de administrador.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setTextUploading(true)
     try {
       const latest = await pb.collection('knowledge_base').getList(1, 1, { sort: '-created' })
       if (latest.items.length > 0 && latest.items[0].content === contentToSave) {
@@ -111,9 +123,9 @@ export default function Admin() {
 
       await pb.collection('knowledge_base').create({
         content: contentToSave,
-        source: 'Admin Input',
+        source: 'Manual Input',
       })
-      toast({ title: 'Conhecimento adicionado' })
+      toast({ title: 'Conhecimento adicionado com sucesso!' })
       setKnowledgeContent('')
     } catch (e) {
       toast({
@@ -121,6 +133,8 @@ export default function Admin() {
         description: getErrorMessage(e),
         variant: 'destructive',
       })
+    } finally {
+      setTextUploading(false)
     }
   }
 
@@ -391,9 +405,17 @@ export default function Admin() {
             />
             <Button
               onClick={handleAddKnowledge}
+              disabled={textUploading || !knowledgeContent.trim()}
               className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333]"
             >
-              Processar Conhecimento
+              {textUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                'Processar Conhecimento'
+              )}
             </Button>
           </div>
 
