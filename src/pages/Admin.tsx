@@ -335,93 +335,94 @@ export default function Admin() {
             Alimentar Mentor IA
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Adicione textos, regras do método ou trechos do livro para treinar o Mentor.
+            Adicione textos ou envie documentos PDF para expandir a base de conhecimento do Mentor
+            IA.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Insira o texto de contexto..."
-            value={knowledgeContent}
-            onChange={(e) => setKnowledgeContent(e.target.value)}
-            className="min-h-[120px] bg-black/50 border-white/20 text-white resize-none"
-          />
-          <Button
-            onClick={handleAddKnowledge}
-            className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333]"
-          >
-            Processar Conhecimento
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-black/40 backdrop-blur-xl border-white/20">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#D4AF37]" />
-            Arquivos do Mentor IA (PDF)
-          </CardTitle>
-          <CardDescription className="text-slate-400">
-            Envie documentos PDF para treinar a base de conhecimento do Mentor IA.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
+        <CardContent className="space-y-8">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-white">Inserção de Texto Manual</h3>
+            <Textarea
+              placeholder="Insira o texto de contexto..."
+              value={knowledgeContent}
+              onChange={(e) => setKnowledgeContent(e.target.value)}
+              className="min-h-[120px] bg-black/50 border-white/20 text-white resize-none"
             />
             <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={fileUploading}
-              className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333] min-w-[150px]"
+              onClick={handleAddKnowledge}
+              className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333]"
             >
-              {fileUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Enviar PDF
-                </>
-              )}
+              Processar Conhecimento
             </Button>
           </div>
 
-          <div className="space-y-2 mt-4">
-            {knowledgeFiles.length === 0 ? (
-              <p className="text-slate-500 italic text-sm">Nenhum arquivo enviado.</p>
-            ) : (
-              knowledgeFiles.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center justify-between p-3 bg-black/60 border border-white/10 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-red-400" />
-                    <div>
-                      <p className="text-sm font-medium text-white">{file.name}</p>
-                      <p className="text-xs text-slate-500">
-                        {new Date(file.created).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => confirmDeleteFile(file.id)}
-                    className="text-slate-400 hover:text-red-400 transition-colors"
-                    title="Remover arquivo"
+          <div className="h-px bg-white/10" />
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-white flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[#D4AF37]" />
+              Upload de Documentos (PDF)
+            </h3>
+            <div className="flex items-center gap-4">
+              <Input
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={fileUploading}
+                className="bg-[#D4AF37] text-black font-bold hover:bg-[#B87333] min-w-[150px]"
+              >
+                {fileUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Enviar PDF
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="space-y-2 mt-4">
+              {knowledgeFiles.length === 0 ? (
+                <p className="text-slate-500 italic text-sm bg-black/40 p-4 rounded-lg text-center border border-white/5">
+                  Nenhum arquivo PDF processado ainda.
+                </p>
+              ) : (
+                knowledgeFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between p-3 bg-black/60 border border-white/10 rounded-lg"
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))
-            )}
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-red-400" />
+                      <div>
+                        <p className="text-sm font-medium text-white">{file.name}</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(file.created).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => confirmDeleteFile(file.id)}
+                      className="text-slate-400 hover:text-red-400 transition-colors"
+                      title="Remover arquivo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
