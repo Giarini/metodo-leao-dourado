@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Crown } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
+import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Index() {
@@ -58,8 +58,12 @@ export default function Index() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#001f3f] to-[#000000] p-4">
       <Card className="w-full max-w-md bg-black/60 backdrop-blur-xl border-[#D4AF37]/30 shadow-2xl shadow-[#D4AF37]/10">
         <CardHeader className="text-center pb-6 pt-10">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-[#D4AF37] to-[#B87333] rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(212,175,55,0.3)]">
-            <Crown className="w-10 h-10 text-black" />
+          <div className="mx-auto mb-6 flex w-full justify-center">
+            <img
+              src={lionImg}
+              alt="Leões Dourado e Bronze"
+              className="h-auto w-full rounded-xl border border-[#D4AF37]/20 object-cover shadow-[0_0_40px_rgba(212,175,55,0.2)]"
+            />
           </div>
           <CardTitle className="font-serif text-3xl text-[#D4AF37] mb-2 tracking-wide">
             Método Leão Dourado
