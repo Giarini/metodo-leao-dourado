@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,33 +7,41 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/hooks/use-auth'
 import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 
-export default function Index() {
+export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
+  const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const { signIn, user } = useAuth()
+  const { signUp } = useAuth()
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (user) {
-      if (user.status === 'pending') navigate('/welcome-pending')
-      else navigate('/niveis')
-    }
-  }, [user, navigate])
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    const { error } = await signIn(email, password)
-    setIsLoading(false)
-    if (error) {
+    if (password !== passwordConfirm) {
       toast({
-        title: 'Erro ao entrar',
-        description: 'Verifique suas credenciais.',
+        title: 'Senhas não conferem',
+        description: 'A senha e a confirmação devem ser iguais.',
         variant: 'destructive',
       })
+      return
+    }
+
+    setIsLoading(true)
+    const { error } = await signUp(email, password, passwordConfirm, name)
+    setIsLoading(false)
+
+    if (error) {
+      toast({
+        title: 'Erro ao registrar',
+        description: getErrorMessage(error),
+        variant: 'destructive',
+      })
+    } else {
+      navigate('/welcome-pending')
     }
   }
 
@@ -45,24 +53,36 @@ export default function Index() {
             <img
               src={lionImg}
               alt="Leões Dourado e Bronze"
-              className="h-auto w-full rounded-xl border border-[#D4AF37]/20 object-cover shadow-[0_0_40px_rgba(212,175,55,0.2)]"
+              className="h-auto w-24 rounded-xl border border-[#D4AF37]/20 object-cover shadow-[0_0_20px_rgba(212,175,55,0.2)]"
             />
           </div>
           <CardTitle className="font-serif text-3xl text-[#D4AF37] mb-2 tracking-wide">
-            Método Leão Dourado
+            Criar Conta
           </CardTitle>
           <CardDescription className="text-slate-400 text-base">
-            Sistema Interno de Acompanhamento
+            Inicie sua jornada no Método Leão Dourado
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="login-email" className="text-slate-300">
+              <Label htmlFor="reg-name" className="text-slate-300">
+                Nome Completo
+              </Label>
+              <Input
+                id="reg-name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-black/50 border-[#D4AF37]/30 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-email" className="text-slate-300">
                 E-mail
               </Label>
               <Input
-                id="login-email"
+                id="reg-email"
                 type="email"
                 required
                 value={email}
@@ -71,20 +91,30 @@ export default function Index() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="login-password" className="text-slate-300">
-                  Senha
-                </Label>
-                <Link to="/forgot-password" className="text-sm text-[#D4AF37] hover:underline">
-                  Esqueceu a senha?
-                </Link>
-              </div>
+              <Label htmlFor="reg-password" className="text-slate-300">
+                Senha
+              </Label>
               <Input
-                id="login-password"
+                id="reg-password"
                 type="password"
                 required
+                minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="bg-black/50 border-[#D4AF37]/30 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-password-confirm" className="text-slate-300">
+                Confirmar Senha
+              </Label>
+              <Input
+                id="reg-password-confirm"
+                type="password"
+                required
+                minLength={8}
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
               />
             </div>
@@ -93,13 +123,13 @@ export default function Index() {
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-[#D4AF37] to-[#B87333] text-black font-bold text-lg h-12 hover:opacity-90"
             >
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? 'Criando...' : 'Cadastrar'}
             </Button>
 
             <div className="text-center text-sm text-slate-400 mt-4">
-              Primeiro acesso?{' '}
-              <Link to="/signup" className="text-[#D4AF37] hover:underline font-medium">
-                Criar sua conta
+              Já tem uma conta?{' '}
+              <Link to="/" className="text-[#D4AF37] hover:underline">
+                Fazer login
               </Link>
             </div>
           </form>

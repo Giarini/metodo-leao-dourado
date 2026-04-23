@@ -16,31 +16,47 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function Admin() {
   const [students, setStudents] = useState<any[]>([])
+  const [pendingStudents, setPendingStudents] = useState<any[]>([])
   const [knowledgeContent, setKnowledgeContent] = useState('')
   const { toast } = useToast()
 
-  const loadStudents = async () => {
+  const loadData = async () => {
     try {
-      const records = await pb
+      const activeRecords = await pb
         .collection('users')
-        .getFullList({ filter: 'role = "student"', sort: 'name' })
-      setStudents(records)
+        .getFullList({ filter: 'role = "student" && status = "active"', sort: 'name' })
+      setStudents(activeRecords)
+
+      const pendingRecords = await pb
+        .collection('users')
+        .getFullList({ filter: 'role = "student" && status = "pending"', sort: '-created' })
+      setPendingStudents(pendingRecords)
     } catch {
       /* intentionally ignored */
     }
   }
 
   useEffect(() => {
-    loadStudents()
+    loadData()
   }, [])
 
   const updateLevel = async (id: string, level: string) => {
     try {
       await pb.collection('users').update(id, { unlocked_level: parseInt(level) })
       toast({ title: 'Nível atualizado com sucesso' })
-      loadStudents()
+      loadData()
     } catch (e) {
       toast({ title: 'Erro ao atualizar nível', variant: 'destructive' })
+    }
+  }
+
+  const authorizeAccess = async (id: string) => {
+    try {
+      await pb.collection('users').update(id, { status: 'active', unlocked_level: 1 })
+      toast({ title: 'Acesso autorizado com sucesso!' })
+      loadData()
+    } catch (e) {
+      toast({ title: 'Erro ao autorizar acesso', variant: 'destructive' })
     }
   }
 
@@ -70,6 +86,48 @@ export default function Admin() {
         </div>
       </div>
 
+      <Card className="bg-black/40 backdrop-blur-xl border-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.05)]">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-amber-500" />
+            Pendências de Acesso
+          </CardTitle>
+          <CardDescription className="text-slate-400">
+            Alunos aguardando aprovação para iniciar a jornada.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {pendingStudents.length === 0 ? (
+              <p className="text-slate-500 italic text-center py-4 bg-black/40 rounded-lg">
+                Nenhum aluno pendente.
+              </p>
+            ) : (
+              pendingStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="flex items-center justify-between p-4 bg-black/60 border border-amber-500/20 rounded-lg"
+                >
+                  <div>
+                    <h3 className="text-lg font-medium text-white">{student.name || 'Sem nome'}</h3>
+                    <p className="text-sm text-slate-400">{student.email}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Registrado em: {new Date(student.created).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => authorizeAccess(student.id)}
+                    className="bg-[#D4AF37] hover:bg-[#B87333] text-black font-bold"
+                  >
+                    Autorizar Acesso
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="bg-black/40 backdrop-blur-xl border-white/20">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
@@ -98,15 +156,17 @@ export default function Admin() {
 
       <Card className="bg-black/40 backdrop-blur-xl border-white/20">
         <CardHeader>
-          <CardTitle className="text-white">Gerenciamento de Alunos</CardTitle>
+          <CardTitle className="text-white">Alunos Ativos</CardTitle>
           <CardDescription className="text-slate-400">
-            Controle o acesso aos níveis de jornada.
+            Controle o acesso aos níveis de jornada dos alunos já aprovados.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {students.length === 0 ? (
-              <p className="text-slate-500">Nenhum aluno encontrado.</p>
+              <p className="text-slate-500 italic text-center py-4 bg-black/40 rounded-lg">
+                Nenhum aluno ativo encontrado.
+              </p>
             ) : (
               students.map((student) => (
                 <div

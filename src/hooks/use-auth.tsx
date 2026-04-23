@@ -3,9 +3,15 @@ import pb from '@/lib/pocketbase/client'
 
 interface AuthContextType {
   user: any
-  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>
+  signUp: (
+    email: string,
+    password: string,
+    passwordConfirm: string,
+    name: string,
+  ) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => void
+  requestPasswordReset: (email: string) => Promise<{ error: any }>
   loading: boolean
 }
 
@@ -31,15 +37,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, passwordConfirm: string, name: string) => {
     try {
       await pb.collection('users').create({
         email,
         password,
-        passwordConfirm: password,
+        passwordConfirm,
         name,
+        role: 'student',
+        status: 'pending',
+        unlocked_level: 0,
       })
       await pb.collection('users').authWithPassword(email, password)
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  const requestPasswordReset = async (email: string) => {
+    try {
+      await pb.collection('users').requestPasswordReset(email)
       return { error: null }
     } catch (error) {
       return { error }

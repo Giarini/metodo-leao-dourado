@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-23T22:12:29.047Z",
+  "generatedAt": "2026-04-23T22:48:17.217Z",
   "collections": [
     {
       "name": "users",
@@ -50,6 +50,13 @@
           "type": "number",
           "required": true,
           "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["pending", "active", "blocked"]
         }
       ],
       "indexes": [

@@ -5,6 +5,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import Layout from './components/Layout'
 import Index from './pages/Index'
+import Signup from './pages/Signup'
+import ForgotPassword from './pages/ForgotPassword'
+import WelcomePending from './pages/WelcomePending'
 import Levels from './pages/Levels'
 import Dashboard from './pages/Dashboard'
 import DiarioDourado from './pages/DiarioDourado'
@@ -15,10 +18,17 @@ import Reports from './pages/Reports'
 import Admin from './pages/Admin'
 import NotFound from './pages/NotFound'
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({
+  children,
+  requireActive = true,
+}: {
+  children: React.ReactNode
+  requireActive?: boolean
+}) => {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/" />
+  if (requireActive && user.status === 'pending') return <Navigate to="/welcome-pending" />
   return <>{children}</>
 }
 
@@ -30,9 +40,19 @@ const App = () => (
         <Sonner />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/welcome-pending"
+            element={
+              <ProtectedRoute requireActive={false}>
+                <WelcomePending />
+              </ProtectedRoute>
+            }
+          />
           <Route
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireActive={true}>
                 <Layout />
               </ProtectedRoute>
             }
