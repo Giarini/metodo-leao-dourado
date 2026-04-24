@@ -8,6 +8,7 @@ import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import pb from '@/lib/pocketbase/client'
+import imgMentor from '../assets/fementoria-b538d.png'
 
 type Message = { id: string; role: 'user' | 'ai'; content: string }
 
@@ -67,7 +68,7 @@ export default function Mentor() {
     <div className="h-full flex flex-col space-y-4">
       <div className="flex items-center gap-4 mb-2">
         <Avatar className="w-14 h-14 border-2 border-[#D4AF37]">
-          <AvatarImage src="https://img.usecurling.com/ppl/medium?gender=male&seed=fernando" />
+          <AvatarImage src={imgMentor} className="object-cover" />
           <AvatarFallback className="bg-[#D4AF37] text-black font-bold">FF</AvatarFallback>
         </Avatar>
         <div>
@@ -94,7 +95,7 @@ export default function Mentor() {
                   )}
                 >
                   {msg.role === 'ai' ? (
-                    <AvatarImage src="https://img.usecurling.com/ppl/medium?gender=male&seed=fernando" />
+                    <AvatarImage src={imgMentor} className="object-cover" />
                   ) : (
                     <AvatarFallback className="bg-slate-800 text-white">
                       {user?.name?.substring(0, 2).toUpperCase() || 'AL'}
@@ -116,7 +117,7 @@ export default function Mentor() {
             {isLoading && (
               <div className="flex gap-4 max-w-[85%]">
                 <Avatar className="w-10 h-10 border border-[#D4AF37]">
-                  <AvatarImage src="https://img.usecurling.com/ppl/medium?gender=male&seed=fernando" />
+                  <AvatarImage src={imgMentor} className="object-cover" />
                 </Avatar>
                 <div className="p-4 rounded-2xl bg-black/60 border border-[#D4AF37]/20 rounded-tl-none flex items-center gap-2">
                   <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" />

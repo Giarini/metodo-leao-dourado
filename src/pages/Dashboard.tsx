@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { BookOpen, CalendarCheck, Sparkles, AlertTriangle } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import imgMentor from '../assets/fementoria-b538d.png'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -81,7 +82,7 @@ export default function Dashboard() {
         >
           <CardHeader className="flex flex-row items-center gap-6 p-8">
             <Avatar className="w-16 h-16 border-2 border-[#D4AF37] group-hover:scale-110 transition-transform">
-              <AvatarImage src="https://img.usecurling.com/ppl/medium?gender=male&seed=fernando" />
+              <AvatarImage src={imgMentor} className="object-cover" />
               <AvatarFallback className="bg-[#D4AF37] text-black font-bold">FF</AvatarFallback>
             </Avatar>
             <div>
