@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { useAuth } from '@/hooks/use-auth'
+import pb from '@/lib/pocketbase/client'
 import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
 
@@ -12,23 +12,22 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSent, setIsSent] = useState(false)
-  const { requestPasswordReset } = useAuth()
   const { toast } = useToast()
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    const { error } = await requestPasswordReset(email)
-    setIsLoading(false)
-
-    if (error) {
+    try {
+      await pb.collection('users').requestPasswordReset(email)
+      setIsSent(true)
+    } catch (error) {
       toast({
         title: 'Erro',
         description: 'Não foi possível solicitar a recuperação. Verifique o e-mail informado.',
         variant: 'destructive',
       })
-    } else {
-      setIsSent(true)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -47,17 +46,15 @@ export default function ForgotPassword() {
             Recuperar Senha
           </CardTitle>
           <CardDescription className="text-slate-400 text-base">
-            {isSent
-              ? 'E-mail enviado com sucesso'
-              : 'Informe seu e-mail para receber um link de recuperação'}
+            {isSent ? 'E-mail enviado!' : 'Informe seu e-mail para receber um link de recuperação'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isSent ? (
             <div className="text-center space-y-6">
               <p className="text-slate-300">
-                Enviamos as instruções de recuperação para <strong>{email}</strong>. Verifique sua
-                caixa de entrada e também a pasta de spam.
+                E-mail enviado! Se este e-mail estiver cadastrado, você receberá um link para
+                redefinir sua senha.
               </p>
               <Button asChild className="w-full bg-slate-800 text-white hover:bg-slate-700">
                 <Link to="/">Voltar ao Login</Link>
@@ -84,7 +81,7 @@ export default function ForgotPassword() {
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-[#D4AF37] to-[#B87333] text-black font-bold text-lg h-12 hover:opacity-90"
               >
-                {isLoading ? 'Enviando...' : 'Recuperar Senha'}
+                {isLoading ? 'Enviando...' : 'Enviar link de recuperação'}
               </Button>
 
               <div className="text-center text-sm mt-4">
