@@ -20,6 +20,10 @@ export default function ForgotPassword() {
     try {
       await pb.collection('users').requestPasswordReset(email)
       setIsSent(true)
+      toast({
+        title: 'Sucesso',
+        description: 'E-mail de recuperação enviado! Verifique sua caixa de entrada.',
+      })
     } catch (error) {
       toast({
         title: 'Erro',

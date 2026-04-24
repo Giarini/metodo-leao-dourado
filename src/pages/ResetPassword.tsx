@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,10 +13,10 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [token, setToken] = useState('')
 
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -60,11 +60,11 @@ export default function ResetPassword() {
     setIsLoading(true)
     try {
       await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm)
-      setIsSuccess(true)
       toast({
         title: 'Sucesso',
-        description: 'Senha alterada com sucesso!',
+        description: 'Senha alterada com sucesso! Faça login com a nova senha.',
       })
+      navigate('/')
     } catch (error) {
       toast({
         title: 'Erro ao redefinir senha',
@@ -91,66 +91,55 @@ export default function ResetPassword() {
             Redefinir Senha
           </CardTitle>
           <CardDescription className="text-slate-400 text-base">
-            {isSuccess ? 'Senha alterada com sucesso!' : 'Crie uma nova senha para sua conta'}
+            Crie uma nova senha para sua conta
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isSuccess ? (
-            <div className="text-center space-y-6">
-              <Button
-                asChild
-                className="w-full bg-gradient-to-r from-[#D4AF37] to-[#B87333] text-black font-bold text-lg hover:opacity-90"
-              >
-                <Link to="/">Voltar ao Login</Link>
-              </Button>
+          <form onSubmit={handleReset} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="new-password" className="text-slate-300">
+                Nova Senha
+              </Label>
+              <Input
+                id="new-password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-black/50 border-[#D4AF37]/30 text-white"
+              />
             </div>
-          ) : (
-            <form onSubmit={handleReset} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-slate-300">
-                  Nova Senha
-                </Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-black/50 border-[#D4AF37]/30 text-white"
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-slate-300">
-                  Confirmar Nova Senha
-                </Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={passwordConfirm}
-                  onChange={(e) => setPasswordConfirm(e.target.value)}
-                  className="bg-black/50 border-[#D4AF37]/30 text-white"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password" className="text-slate-300">
+                Confirmar Nova Senha
+              </Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                required
+                minLength={8}
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className="bg-black/50 border-[#D4AF37]/30 text-white"
+              />
+            </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-[#D4AF37] to-[#B87333] text-black font-bold text-lg h-12 hover:opacity-90"
-              >
-                {isLoading ? 'Salvando...' : 'Redefinir Senha'}
-              </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-[#D4AF37] to-[#B87333] text-black font-bold text-lg h-12 hover:opacity-90"
+            >
+              {isLoading ? 'Salvando...' : 'Redefinir Senha'}
+            </Button>
 
-              <div className="text-center text-sm mt-4">
-                <Link to="/" className="text-slate-400 hover:text-white transition-colors">
-                  Cancelar
-                </Link>
-              </div>
-            </form>
-          )}
+            <div className="text-center text-sm mt-4">
+              <Link to="/" className="text-slate-400 hover:text-white transition-colors">
+                Cancelar
+              </Link>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>
