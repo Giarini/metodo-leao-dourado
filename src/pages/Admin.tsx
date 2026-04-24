@@ -35,8 +35,47 @@ export default function Admin() {
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileToDelete, setFileToDelete] = useState<string | null>(null)
+
+  const splitTextIntoChunks = (text: string, maxChunkSize = 3500): string[] => {
+    const chunks: string[] = []
+    let currentIndex = 0
+
+    while (currentIndex < text.length) {
+      if (currentIndex + maxChunkSize >= text.length) {
+        chunks.push(text.substring(currentIndex))
+        break
+      }
+
+      let splitIndex = currentIndex + maxChunkSize
+      const lastNewline = text.lastIndexOf('\n', splitIndex)
+
+      if (lastNewline > currentIndex + maxChunkSize / 2) {
+        splitIndex = lastNewline
+      } else {
+        const lastPeriod = text.lastIndexOf('.', splitIndex)
+        if (lastPeriod > currentIndex + maxChunkSize / 2) {
+          splitIndex = lastPeriod + 1
+        } else {
+          const lastSpace = text.lastIndexOf(' ', splitIndex)
+          if (lastSpace > currentIndex + maxChunkSize / 2) {
+            splitIndex = lastSpace
+          }
+        }
+      }
+
+      chunks.push(text.substring(currentIndex, splitIndex).trim())
+      currentIndex = splitIndex
+
+      while (currentIndex < text.length && /\s/.test(text[currentIndex])) {
+        currentIndex++
+      }
+    }
+
+    return chunks.filter((c) => c.length > 0)
+  }
 
   const { user } = useAuth()
   const [currentPassword, setCurrentPassword] = useState('')
@@ -138,26 +177,54 @@ export default function Admin() {
     }
 
     setIsProcessing(true)
+    setProcessingStatus('Iniciando processamento...')
 
     try {
       let processedText = false
       let processedFile = false
 
       if (contentToSave) {
-        const latest = await pb.collection('knowledge_base').getList(1, 1, { sort: '-created' })
-        if (latest.items.length > 0 && latest.items[0].content === contentToSave) {
-          toast({
-            title: 'Aviso',
-            description: 'O conteúdo de texto é idêntico ao último adicionado. Ignorando texto.',
-            variant: 'destructive',
-          })
+        const chunks = splitTextIntoChunks(contentToSave)
+
+        if (chunks.length === 1) {
+          const latest = await pb.collection('knowledge_base').getList(1, 1, { sort: '-created' })
+          if (latest.items.length > 0 && latest.items[0].content === contentToSave) {
+            toast({
+              title: 'Aviso',
+              description: 'O conteúdo de texto é idêntico ao último adicionado. Ignorando texto.',
+              variant: 'destructive',
+            })
+          } else {
+            setProcessingStatus('Salvando texto...')
+            await pb.collection('knowledge_base').create({
+              content: contentToSave,
+              source: 'Manual Admin Input',
+            })
+            processedText = true
+            setKnowledgeContent('')
+          }
         } else {
-          await pb.collection('knowledge_base').create({
-            content: contentToSave,
-            source: 'Manual Admin Input',
-          })
-          processedText = true
-          setKnowledgeContent('')
+          let hasErrors = false
+          for (let i = 0; i < chunks.length; i++) {
+            setProcessingStatus(`Processando texto: parte ${i + 1} de ${chunks.length}...`)
+            try {
+              await pb.collection('knowledge_base').create({
+                content: chunks[i],
+                source: `Manual Admin Input (Parte ${i + 1}/${chunks.length})`,
+              })
+              processedText = true
+            } catch (err) {
+              hasErrors = true
+              toast({
+                title: `Erro na parte ${i + 1}`,
+                description: getErrorMessage(err),
+                variant: 'destructive',
+              })
+            }
+          }
+          if (!hasErrors) {
+            setKnowledgeContent('')
+          }
         }
       }
 
@@ -217,15 +284,24 @@ export default function Admin() {
               variant: 'destructive',
             })
           } else {
-            const chunkSize = 3000
-            for (let i = 0; i < cleanText.length; i += chunkSize) {
-              const chunk = cleanText.substring(i, i + chunkSize)
+            const pdfChunks = splitTextIntoChunks(cleanText, 3000)
+            for (let i = 0; i < pdfChunks.length; i++) {
+              const chunk = pdfChunks[i]
               if (chunk.trim().length < 50) continue
 
-              await pb.collection('knowledge_base').create({
-                content: chunk,
-                source: `${selectedFile.name} (Parte ${Math.floor(i / chunkSize + 1)})`,
-              })
+              setProcessingStatus(`Extraindo PDF: parte ${i + 1} de ${pdfChunks.length}...`)
+              try {
+                await pb.collection('knowledge_base').create({
+                  content: chunk,
+                  source: `${selectedFile.name} (Parte ${i + 1})`,
+                })
+              } catch (err) {
+                toast({
+                  title: `Erro na parte ${i + 1} do PDF`,
+                  description: getErrorMessage(err),
+                  variant: 'destructive',
+                })
+              }
             }
           }
           processedFile = true
@@ -245,6 +321,7 @@ export default function Admin() {
       })
     } finally {
       setIsProcessing(false)
+      setProcessingStatus(null)
     }
   }
 
@@ -440,7 +517,7 @@ export default function Admin() {
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processando...
+                  {processingStatus || 'Processando...'}
                 </>
               ) : (
                 'Processar Conhecimento'
