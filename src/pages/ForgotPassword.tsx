@@ -22,12 +22,14 @@ export default function ForgotPassword() {
       setIsSent(true)
       toast({
         title: 'Sucesso',
-        description: 'E-mail de recuperação enviado! Verifique sua caixa de entrada.',
+        description:
+          'Se existir uma conta com este e-mail, você receberá um link de recuperação em breve. Verifique também sua caixa de spam.',
       })
     } catch (error) {
       toast({
         title: 'Erro',
-        description: 'Não foi possível solicitar a recuperação. Verifique o e-mail informado.',
+        description:
+          'Serviço temporariamente indisponível. Por favor, contate o suporte ou tente novamente mais tarde.',
         variant: 'destructive',
       })
     } finally {
@@ -50,15 +52,15 @@ export default function ForgotPassword() {
             Recuperar Senha
           </CardTitle>
           <CardDescription className="text-slate-400 text-base">
-            {isSent ? 'E-mail enviado!' : 'Informe seu e-mail para receber um link de recuperação'}
+            {isSent ? 'E-mail enviado' : 'Informe seu e-mail para receber um link de recuperação'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isSent ? (
             <div className="text-center space-y-6">
               <p className="text-slate-300">
-                E-mail enviado! Se este e-mail estiver cadastrado, você receberá um link para
-                redefinir sua senha.
+                Se existir uma conta com este e-mail, você receberá um link de recuperação em breve.
+                Verifique também sua caixa de spam.
               </p>
               <Button asChild className="w-full bg-slate-800 text-white hover:bg-slate-700">
                 <Link to="/">Voltar ao Login</Link>
