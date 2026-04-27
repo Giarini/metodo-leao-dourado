@@ -107,34 +107,47 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
 
     setIsLoading(true)
 
+    const levelContext = user?.unlocked_level ?? 0
+
     if (user?.id) {
-      createChatMessage({
+      await createChatMessage({
         user: user.id,
         role: 'user',
         content: userText,
-        level_context: user.unlocked_level || 1,
-      }).catch(console.error)
+        level_context: levelContext,
+      }).catch((err) => console.error('Failed to save user message:', err))
     }
 
     try {
-      const res = await pb.send('/backend/v1/search/mentor', {
-        method: 'POST',
-        body: JSON.stringify({ query: userText }),
-      })
+      let reply = ''
+      let success = false
+      let retryCount = 0
 
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), role: 'ai', content: res.reply },
-      ])
+      while (retryCount < 2 && !success) {
+        try {
+          const res = await pb.send('/backend/v1/search/mentor', {
+            method: 'POST',
+            body: JSON.stringify({ query: userText }),
+          })
+          reply = res.reply
+          success = true
+        } catch (err: any) {
+          retryCount++
+          if (retryCount >= 2) throw err
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+        }
+      }
 
       if (user?.id) {
-        createChatMessage({
+        await createChatMessage({
           user: user.id,
           role: 'assistant',
-          content: res.reply,
-          level_context: user.unlocked_level || 1,
-        }).catch(console.error)
+          content: reply,
+          level_context: levelContext,
+        }).catch((err) => console.error('Failed to save assistant message:', err))
       }
+
+      setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'ai', content: reply }])
     } catch (e: any) {
       const isTimeout = e?.status === 0 || e?.status === 408 || e?.status === 504
       const errorMsg = isTimeout
@@ -272,7 +285,7 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
           )}
         >
           <MentorChatChips
-            level={user?.unlocked_level || 1}
+            level={user?.unlocked_level ?? 0}
             isLoading={isLoading || isFetchingHistory}
             onSelect={handleSend}
           />
