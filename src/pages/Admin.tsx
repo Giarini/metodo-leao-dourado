@@ -34,6 +34,7 @@ export default function Admin() {
 
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [knowledgeStats, setKnowledgeStats] = useState({ total: 0, indexed: 0 })
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -110,9 +111,22 @@ export default function Admin() {
     }
   }
 
+  const loadKnowledgeStats = async () => {
+    try {
+      const totalRes = await pb.collection('knowledge_base').getList(1, 1)
+      const indexedRes = await pb
+        .collection('knowledge_base')
+        .getList(1, 1, { filter: 'is_indexed = true' })
+      setKnowledgeStats({ total: totalRes.totalItems, indexed: indexedRes.totalItems })
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   useEffect(() => {
     loadData()
     loadFiles()
+    loadKnowledgeStats()
   }, [])
 
   const updateLevel = async (id: string, level: string) => {
@@ -312,6 +326,7 @@ export default function Admin() {
 
       if (processedText || processedFile) {
         toast({ title: 'Conhecimento processado com sucesso!' })
+        loadKnowledgeStats()
       }
     } catch (err) {
       toast({
@@ -344,6 +359,7 @@ export default function Admin() {
 
       toast({ title: 'Sucesso', description: 'Arquivo e conteúdo removidos com sucesso.' })
       loadFiles()
+      loadKnowledgeStats()
     } catch (err) {
       toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' })
     } finally {
@@ -527,44 +543,77 @@ export default function Admin() {
 
           <div className="h-px bg-white/10" />
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-[#D4AF37]" />
-              Arquivos PDF Processados
-            </h3>
-
-            <div className="space-y-2 mt-4">
-              {knowledgeFiles.length === 0 ? (
-                <p className="text-slate-500 italic text-sm bg-black/40 p-4 rounded-lg text-center border border-white/5">
-                  Nenhum arquivo PDF processado ainda.
-                </p>
-              ) : (
-                knowledgeFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between p-3 bg-black/60 border border-white/10 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-red-400" />
-                      <div>
-                        <p className="text-sm font-medium text-white">{file.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {new Date(file.created).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => confirmDeleteFile(file.id)}
-                      className="text-slate-400 hover:text-red-400 transition-colors"
-                      title="Remover arquivo"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#D4AF37]" />
+                Status da Base de Conhecimento
+              </h3>
+              <div className="bg-black/50 border border-white/10 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Total de Blocos</span>
+                  <span className="text-white font-bold">{knowledgeStats.total}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Blocos Indexados (IA)</span>
+                  <span className="text-[#D4AF37] font-bold">{knowledgeStats.indexed}</span>
+                </div>
+                <div className="pt-2 border-t border-white/10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 text-sm">Status do Processamento</span>
+                    {knowledgeStats.total > 0 && knowledgeStats.total === knowledgeStats.indexed ? (
+                      <span className="text-green-400 text-sm font-medium">Sincronizado</span>
+                    ) : knowledgeStats.total > 0 ? (
+                      <span className="text-amber-400 text-sm font-medium animate-pulse">
+                        Processando...
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-sm font-medium">Vazio</span>
+                    )}
                   </div>
-                ))
-              )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#D4AF37]" />
+                Arquivos PDF Processados
+              </h3>
+
+              <div className="space-y-2 mt-4">
+                {knowledgeFiles.length === 0 ? (
+                  <p className="text-slate-500 italic text-sm bg-black/40 p-4 rounded-lg text-center border border-white/5">
+                    Nenhum arquivo PDF processado ainda.
+                  </p>
+                ) : (
+                  knowledgeFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 bg-black/60 border border-white/10 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-red-400" />
+                        <div>
+                          <p className="text-sm font-medium text-white">{file.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(file.created).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => confirmDeleteFile(file.id)}
+                        className="text-slate-400 hover:text-red-400 transition-colors"
+                        title="Remover arquivo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </CardContent>

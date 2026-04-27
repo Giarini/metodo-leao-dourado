@@ -26,9 +26,10 @@ routerAdd(
     })
 
     if (embedRes.statusCode !== 200) {
+      $app.logger().error('Mentor search embedding failed', 'status', embedRes.statusCode)
       return e.json(200, {
         reply:
-          'Excelente reflexão. A disciplina quebra a resistência. Qual a menor ação possível que você pode fazer agora mesmo?',
+          'Neste momento meus processos de metacognição estão passando por uma breve pausa reflexiva. Você pode tentar novamente em alguns instantes?',
       })
     }
 
@@ -37,10 +38,12 @@ routerAdd(
       const results = $vectors.search(e, 'knowledge_base', {
         field: 'embedding',
         query: embedRes.json.data[0].embedding,
-        k: 3,
+        k: 5,
       })
       context = results.items.map((r) => r.getString('content')).join('\n\n')
-    } catch (err) {}
+    } catch (err) {
+      $app.logger().error('Vector search failed', 'error', String(err))
+    }
 
     const chatRes = $http.send({
       url: 'https://api.openai.com/v1/chat/completions',
@@ -55,9 +58,14 @@ routerAdd(
           {
             role: 'system',
             content:
-              'Você é o Mentor IA Fernando Fontes, especialista no Método Leão Dourado (metacognição, inhaca mental, microações). Responda de forma sofisticada e direta usando o contexto. Se não souber responder algo sobre o método, responda inspirando à ação e disciplina.',
+              'Você é o Mentor IA Fernando Fontes, especialista no Método Leão Dourado (metacognição, inhaca mental, microações). Responda de forma sofisticada e direta usando o contexto fornecido. Se a resposta não estiver no contexto e não for sobre o método, responda inspirando à ação e disciplina, mas seja prestativo.',
           },
-          { role: 'system', content: 'Contexto:\n' + context },
+          {
+            role: 'system',
+            content:
+              'Contexto da Base de Conhecimento:\n' +
+              (context || 'Nenhum contexto específico encontrado.'),
+          },
           { role: 'user', content: query },
         ],
       }),
@@ -65,9 +73,10 @@ routerAdd(
     })
 
     if (chatRes.statusCode !== 200) {
+      $app.logger().error('Mentor chat completion failed', 'status', chatRes.statusCode)
       return e.json(200, {
         reply:
-          'Mantenha a metacognição ativa. Transforme essa constatação em uma microação palpável para as próximas 24 horas.',
+          'Minhas sinapses estão um pouco sobrecarregadas agora. Mantenha a disciplina e tente novamente em breve.',
       })
     }
 
