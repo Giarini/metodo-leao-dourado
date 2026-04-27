@@ -4,6 +4,7 @@ routerAdd(
   (e) => {
     const body = e.requestInfo().body || {}
     const query = (body.query || '').trim()
+    const levelContext = body.levelContext || 0
     if (!query) return e.badRequestError('missing query')
 
     const lower = query.toLowerCase()
@@ -74,6 +75,9 @@ routerAdd(
             {
               role: 'system',
               content:
+                'Contexto de Nível do Usuário: Nível ' +
+                levelContext +
+                '\n\n' +
                 'Contexto da Base de Conhecimento:\n' +
                 (context || 'Nenhum contexto específico encontrado.'),
             },

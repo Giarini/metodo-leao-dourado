@@ -107,16 +107,8 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
 
     setIsLoading(true)
 
+    // Using explicitly 0 if null/undefined for general overview
     const levelContext = user?.unlocked_level ?? 0
-
-    if (user?.id) {
-      await createChatMessage({
-        user: user.id,
-        role: 'user',
-        content: userText,
-        level_context: levelContext,
-      }).catch((err) => console.error('Failed to save user message:', err))
-    }
 
     try {
       let reply = ''
@@ -127,18 +119,37 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
         try {
           const res = await pb.send('/backend/v1/search/mentor', {
             method: 'POST',
-            body: JSON.stringify({ query: userText }),
+            body: JSON.stringify({ query: userText, levelContext }),
+            // pb.send explicitly includes token, ensuring persistence
           })
           reply = res.reply
           success = true
         } catch (err: any) {
           retryCount++
-          if (retryCount >= 2) throw err
+          if (retryCount >= 2) {
+            console.error(
+              'Mentor search failed. Payload:',
+              { query: userText, levelContext },
+              'Response:',
+              err?.response,
+              'Status:',
+              err?.status,
+            )
+            throw err
+          }
           await new Promise((resolve) => setTimeout(resolve, 1000))
         }
       }
 
-      if (user?.id) {
+      if (success && user?.id) {
+        // Credit Protection Logic: Only save both messages on successful reply
+        await createChatMessage({
+          user: user.id,
+          role: 'user',
+          content: userText,
+          level_context: levelContext,
+        }).catch((err) => console.error('Failed to save user message:', err))
+
         await createChatMessage({
           user: user.id,
           role: 'assistant',
@@ -153,6 +164,9 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
       const errorMsg = isTimeout
         ? 'A conexão expirou. Tivemos um pequeno bloqueio mental de comunicação. Pode repetir?'
         : 'Ocorreu um erro ao processar sua mensagem. Tente novamente.'
+
+      // UI State Recovery: keep text in input so user doesn't need to retype
+      setInput(userText)
 
       setMessages((prev) => [
         ...prev,
