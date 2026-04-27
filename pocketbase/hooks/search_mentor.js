@@ -4,7 +4,7 @@ routerAdd(
   (e) => {
     const body = e.requestInfo().body || {}
     const query = (body.query || '').trim()
-    const levelContext = body.levelContext || 0
+    const levelContext = body.levelContext ?? 0
     if (!query) return e.badRequestError('missing query')
 
     const lower = query.toLowerCase()
@@ -30,17 +30,15 @@ routerAdd(
 
       if (embedRes.statusCode !== 200) {
         $app.logger().error('Mentor search embedding failed', 'status', embedRes.statusCode)
-        return e.json(200, {
-          reply:
-            'Neste momento meus processos de metacognição estão passando por uma breve pausa reflexiva. Você pode tentar novamente em alguns instantes?',
-        })
+        return e.internalServerError(
+          'Neste momento meus processos de metacognição estão passando por uma breve pausa reflexiva. Você pode tentar novamente em alguns instantes?',
+        )
       }
     } catch (err) {
       $app.logger().error('Mentor search embedding transport failed', 'error', String(err))
-      return e.json(200, {
-        reply:
-          'Neste momento meus processos de metacognição estão passando por uma breve pausa reflexiva. Você pode tentar novamente em alguns instantes?',
-      })
+      return e.internalServerError(
+        'Neste momento meus processos de metacognição estão passando por uma breve pausa reflexiva. Você pode tentar novamente em alguns instantes?',
+      )
     }
 
     let context = ''
@@ -89,17 +87,15 @@ routerAdd(
 
       if (chatRes.statusCode !== 200) {
         $app.logger().error('Mentor chat completion failed', 'status', chatRes.statusCode)
-        return e.json(200, {
-          reply:
-            'Minhas sinapses estão um pouco sobrecarregadas agora. Mantenha a disciplina e tente novamente em breve.',
-        })
+        return e.internalServerError(
+          'Minhas sinapses estão um pouco sobrecarregadas agora. Mantenha a disciplina e tente novamente em breve.',
+        )
       }
     } catch (err) {
       $app.logger().error('Mentor chat completion transport failed', 'error', String(err))
-      return e.json(200, {
-        reply:
-          'Minhas sinapses estão um pouco sobrecarregadas agora. Mantenha a disciplina e tente novamente em breve.',
-      })
+      return e.internalServerError(
+        'Minhas sinapses estão um pouco sobrecarregadas agora. Mantenha a disciplina e tente novamente em breve.',
+      )
     }
 
     return e.json(200, { reply: chatRes.json.choices[0].message.content })

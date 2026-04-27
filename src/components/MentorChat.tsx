@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useLocation, useParams } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +23,8 @@ type Message = {
 
 export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
   const { user } = useAuth()
+  const location = useLocation()
+  const params = useParams()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -108,7 +111,9 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
     setIsLoading(true)
 
     // Using explicitly 0 if null/undefined for general overview
-    const levelContext = user?.unlocked_level ?? 0
+    const isGeneralLevel = location.pathname === '/niveis'
+    const currentLevelId = params.id ? parseInt(params.id, 10) : null
+    const levelContext = isGeneralLevel ? 0 : (currentLevelId ?? user?.unlocked_level ?? 0)
 
     try {
       let reply = ''
@@ -163,7 +168,7 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
       const isTimeout = e?.status === 0 || e?.status === 408 || e?.status === 504
       const errorMsg = isTimeout
         ? 'A conexão expirou. Tivemos um pequeno bloqueio mental de comunicação. Pode repetir?'
-        : 'Ocorreu um erro ao processar sua mensagem. Tente novamente.'
+        : e?.response?.message || 'Ocorreu um erro ao processar sua mensagem. Tente novamente.'
 
       // UI State Recovery: keep text in input so user doesn't need to retype
       setInput(userText)
