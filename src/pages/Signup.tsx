@@ -21,6 +21,16 @@ export default function Signup() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!/^\d{8}$/.test(password)) {
+      toast({
+        title: 'Formato inválido',
+        description: 'A senha deve conter exatamente 8 números.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (password !== passwordConfirm) {
       toast({
         title: 'Senhas não conferem',
@@ -41,6 +51,11 @@ export default function Signup() {
         variant: 'destructive',
       })
     } else {
+      toast({
+        title: 'Conta criada com sucesso!',
+        description:
+          'Por favor, aguarde a liberação pela central de suporte para acessar o conteúdo.',
+      })
       navigate('/welcome-pending')
     }
   }
@@ -92,16 +107,19 @@ export default function Signup() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="reg-password" className="text-slate-300">
-                Senha
+                Senha (exatamente 8 números)
               </Label>
               <Input
                 id="reg-password"
                 type="password"
+                inputMode="numeric"
+                pattern="\d{8}"
+                maxLength={8}
                 required
-                minLength={8}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
+                placeholder="Ex: 12345678"
               />
             </div>
             <div className="space-y-2">
@@ -111,11 +129,14 @@ export default function Signup() {
               <Input
                 id="reg-password-confirm"
                 type="password"
+                inputMode="numeric"
+                pattern="\d{8}"
+                maxLength={8}
                 required
-                minLength={8}
                 value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
+                onChange={(e) => setPasswordConfirm(e.target.value.replace(/\D/g, ''))}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
+                placeholder="Confirme a senha"
               />
             </div>
             <Button

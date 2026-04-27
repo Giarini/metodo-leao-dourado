@@ -12,7 +12,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock, Loader2 } from 'lucide-react'
+import {
+  ShieldAlert,
+  BookOpen,
+  FileText,
+  Trash2,
+  Upload,
+  Lock,
+  Loader2,
+  Ban,
+  CheckCircle,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import {
@@ -26,10 +36,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/hooks/use-auth'
+import { useNavigate } from 'react-router-dom'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export default function Admin() {
   const [students, setStudents] = useState<any[]>([])
   const [pendingStudents, setPendingStudents] = useState<any[]>([])
+  const [blockedStudents, setBlockedStudents] = useState<any[]>([])
   const [knowledgeContent, setKnowledgeContent] = useState('')
 
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
@@ -79,7 +92,14 @@ export default function Admin() {
   }
 
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [currentPassword, setCurrentPassword] = useState('')
+
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      navigate('/niveis')
+    }
+  }, [user, navigate])
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
@@ -97,10 +117,19 @@ export default function Admin() {
         .collection('users')
         .getFullList({ filter: 'role = "student" && status = "pending"', sort: '-created' })
       setPendingStudents(pendingRecords)
+
+      const blockedRecords = await pb
+        .collection('users')
+        .getFullList({ filter: 'role = "student" && status = "blocked"', sort: '-created' })
+      setBlockedStudents(blockedRecords)
     } catch {
       /* intentionally ignored */
     }
   }
+
+  useRealtime('users', () => {
+    loadData()
+  })
 
   const loadFiles = async () => {
     try {
@@ -146,6 +175,16 @@ export default function Admin() {
       loadData()
     } catch (e) {
       toast({ title: 'Erro ao autorizar acesso', variant: 'destructive' })
+    }
+  }
+
+  const blockUser = async (id: string) => {
+    try {
+      await pb.collection('users').update(id, { status: 'blocked' })
+      toast({ title: 'Usuário bloqueado com sucesso!' })
+      loadData()
+    } catch (e) {
+      toast({ title: 'Erro ao bloquear', variant: 'destructive' })
     }
   }
 
@@ -404,6 +443,8 @@ export default function Admin() {
       setPasswordLoading(false)
     }
   }
+
+  if (user?.role !== 'admin') return null
 
   return (
     <div className="space-y-8">
@@ -714,6 +755,15 @@ export default function Admin() {
                         <SelectItem value="5">5 - Soberano</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => blockUser(student.id)}
+                      className="border-red-500/30 text-red-500 hover:bg-red-500/10 hover:text-red-400 ml-2"
+                      title="Bloquear usuário"
+                    >
+                      <Ban className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               ))
@@ -722,7 +772,52 @@ export default function Admin() {
         </CardContent>
       </Card>
 
+      <Card className="bg-black/40 backdrop-blur-xl border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Ban className="w-5 h-5 text-red-500" />
+            Alunos Bloqueados
+          </CardTitle>
+          <CardDescription className="text-slate-400">
+            Usuários com acesso revogado à plataforma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {blockedStudents.length === 0 ? (
+              <p className="text-slate-500 italic text-center py-4 bg-black/40 rounded-lg">
+                Nenhum aluno bloqueado.
+              </p>
+            ) : (
+              blockedStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="flex items-center justify-between p-4 bg-black/60 border border-red-500/20 rounded-lg"
+                >
+                  <div>
+                    <h3 className="text-lg font-medium text-white">{student.name || 'Sem nome'}</h3>
+                    <p className="text-sm text-slate-400">{student.email}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Registrado em: {new Date(student.created).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => authorizeAccess(student.id)}
+                    variant="outline"
+                    className="border-green-500/30 text-green-500 hover:bg-green-500/10 hover:text-green-400"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Reativar Acesso
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && setFileToDelete(null)}>
+        {' '}
         <AlertDialogContent className="bg-zinc-950 border-white/20 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja remover este arquivo?</AlertDialogTitle>

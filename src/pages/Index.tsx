@@ -13,15 +13,25 @@ export default function Index() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const { signIn, user } = useAuth()
+  const { signIn, user, signOut } = useAuth()
   const { toast } = useToast()
 
   useEffect(() => {
     if (user) {
-      if (user.status === 'pending') navigate('/welcome-pending')
-      else navigate('/niveis')
+      if (user.status === 'pending') {
+        navigate('/welcome-pending')
+      } else if (user.status === 'blocked') {
+        toast({
+          title: 'Acesso Bloqueado',
+          description: 'Sua conta foi desativada. Entre em contato com o suporte.',
+          variant: 'destructive',
+        })
+        signOut()
+      } else {
+        navigate('/niveis')
+      }
     }
-  }, [user, navigate])
+  }, [user, navigate, toast, signOut])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -45,14 +45,15 @@ export default function WelcomePending() {
             Bem-vindo ao <span className="text-[#D4AF37]">Método Leão Dourado!</span>
           </CardTitle>
           <CardDescription className="text-slate-300 text-lg">
-            Seu acesso está sendo processado.
+            Seu acesso ainda está pendente de aprovação pela central de suporte.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 p-6 rounded-xl">
             <p className="text-slate-200">
-              Para agilizar sua aprovação e liberar os conteúdos exclusivos da sua jornada, entre em
-              contato com nosso suporte via WhatsApp.
+              Sua conta foi criada com sucesso! Por favor, aguarde a liberação pela central de
+              suporte para acessar o conteúdo da sua jornada. Para agilizar, você pode nos contatar
+              via WhatsApp.
             </p>
           </div>
 
