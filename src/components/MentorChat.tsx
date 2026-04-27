@@ -125,11 +125,23 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
           const res = await pb.send('/backend/v1/search/mentor', {
             method: 'POST',
             body: JSON.stringify({ query: userText, levelContext }),
-            // pb.send explicitly includes token, ensuring persistence
+            headers: {
+              Authorization: pb.authStore.token,
+            },
           })
           reply = res.reply
           success = true
         } catch (err: any) {
+          if (err?.status === 401 && pb.authStore.isValid && retryCount === 0) {
+            try {
+              await pb.collection('users').authRefresh()
+              retryCount++
+              continue
+            } catch (refreshErr) {
+              console.error('Session refresh failed:', refreshErr)
+              throw err
+            }
+          }
           retryCount++
           if (retryCount >= 2) {
             console.error(
@@ -166,9 +178,19 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
       setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'ai', content: reply }])
     } catch (e: any) {
       const isTimeout = e?.status === 0 || e?.status === 408 || e?.status === 504
-      const errorMsg = isTimeout
-        ? 'A conexão expirou. Tivemos um pequeno bloqueio mental de comunicação. Pode repetir?'
-        : e?.response?.message || 'Ocorreu um erro ao processar sua mensagem. Tente novamente.'
+      const isAuthError = e?.status === 401 || e?.status === 403
+
+      let errorMsg = 'Ocorreu um erro ao processar sua mensagem. Tente novamente.'
+
+      if (isTimeout) {
+        errorMsg =
+          'A conexão expirou. Tivemos um pequeno bloqueio mental de comunicação. Pode repetir?'
+      } else if (isAuthError) {
+        errorMsg =
+          'Sua sessão parece ter expirado. Por favor, tente enviar novamente para reautenticar ou recarregue a página.'
+      } else if (e?.response?.message) {
+        errorMsg = e.response.message
+      }
 
       // UI State Recovery: keep text in input so user doesn't need to retype
       setInput(userText)

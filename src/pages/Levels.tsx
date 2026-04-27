@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/comp
 import { Lock, Unlock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
+import { MentorChat } from '@/components/MentorChat'
 
 import imgLevel1 from '../assets/1-aluno-d9090.png'
 import imgLevel2 from '../assets/2-guardiao-769db.png'
@@ -133,6 +134,12 @@ export default function Levels() {
           </Card>
         ))}
       </div>
+
+      {user?.status === 'active' && (
+        <div className="mt-12">
+          <MentorChat />
+        </div>
+      )}
     </div>
   )
 }
