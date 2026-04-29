@@ -11,7 +11,7 @@ export default function WelcomePending() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (user?.status === 'active') {
+    if (user?.status === 'active' || user?.role === 'admin') {
       navigate('/niveis')
     }
   }, [user, navigate])
@@ -42,18 +42,26 @@ export default function WelcomePending() {
             />
           </div>
           <CardTitle className="font-serif text-3xl text-white mb-2">
-            Bem-vindo ao <span className="text-[#D4AF37]">Método Leão Dourado!</span>
+            {user?.status === 'blocked' ? (
+              <span className="text-red-500">Acesso Bloqueado</span>
+            ) : (
+              <>
+                Bem-vindo ao <span className="text-[#D4AF37]">Método Leão Dourado!</span>
+              </>
+            )}
           </CardTitle>
           <CardDescription className="text-slate-300 text-lg">
-            Seu acesso ainda está pendente de aprovação pela central de suporte.
+            {user?.status === 'blocked'
+              ? 'Sua conta foi bloqueada pela administração.'
+              : 'Seu acesso ainda está pendente de aprovação pela central de suporte.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 p-6 rounded-xl">
             <p className="text-slate-200">
-              Sua conta foi criada com sucesso! Por favor, aguarde a liberação pela central de
-              suporte para acessar o conteúdo da sua jornada. Para agilizar, você pode nos contatar
-              via WhatsApp.
+              {user?.status === 'blocked'
+                ? 'Por favor, entre em contato com o suporte para mais informações sobre o status da sua conta.'
+                : 'Sua conta foi criada com sucesso! Por favor, aguarde a liberação pela central de suporte para acessar o conteúdo da sua jornada. Para agilizar, você pode nos contatar via WhatsApp.'}
             </p>
           </div>
 

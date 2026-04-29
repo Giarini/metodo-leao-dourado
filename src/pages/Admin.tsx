@@ -13,16 +13,15 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
-  ShieldAlert,
-  BookOpen,
-  FileText,
-  Trash2,
-  Upload,
-  Lock,
-  Loader2,
-  Ban,
-  CheckCircle,
-} from 'lucide-react'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock, Loader2, Users } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import {
@@ -40,9 +39,7 @@ import { useNavigate } from 'react-router-dom'
 import { useRealtime } from '@/hooks/use-realtime'
 
 export default function Admin() {
-  const [students, setStudents] = useState<any[]>([])
-  const [pendingStudents, setPendingStudents] = useState<any[]>([])
-  const [blockedStudents, setBlockedStudents] = useState<any[]>([])
+  const [usersList, setUsersList] = useState<any[]>([])
   const [knowledgeContent, setKnowledgeContent] = useState('')
 
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([])
@@ -108,20 +105,8 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      const activeRecords = await pb
-        .collection('users')
-        .getFullList({ filter: 'role = "student" && status = "active"', sort: 'name' })
-      setStudents(activeRecords)
-
-      const pendingRecords = await pb
-        .collection('users')
-        .getFullList({ filter: 'role = "student" && status = "pending"', sort: '-created' })
-      setPendingStudents(pendingRecords)
-
-      const blockedRecords = await pb
-        .collection('users')
-        .getFullList({ filter: 'role = "student" && status = "blocked"', sort: '-created' })
-      setBlockedStudents(blockedRecords)
+      const records = await pb.collection('users').getFullList({ sort: '-created' })
+      setUsersList(records)
     } catch {
       /* intentionally ignored */
     }
@@ -158,33 +143,13 @@ export default function Admin() {
     loadKnowledgeStats()
   }, [])
 
-  const updateLevel = async (id: string, level: string) => {
+  const updateUser = async (id: string, data: any) => {
     try {
-      await pb.collection('users').update(id, { unlocked_level: parseInt(level) })
-      toast({ title: 'Nível atualizado com sucesso' })
+      await pb.collection('users').update(id, data)
+      toast({ title: 'Usuário atualizado com sucesso!' })
       loadData()
     } catch (e) {
-      toast({ title: 'Erro ao atualizar nível', variant: 'destructive' })
-    }
-  }
-
-  const authorizeAccess = async (id: string) => {
-    try {
-      await pb.collection('users').update(id, { status: 'active', unlocked_level: 1 })
-      toast({ title: 'Acesso autorizado com sucesso!' })
-      loadData()
-    } catch (e) {
-      toast({ title: 'Erro ao autorizar acesso', variant: 'destructive' })
-    }
-  }
-
-  const blockUser = async (id: string) => {
-    try {
-      await pb.collection('users').update(id, { status: 'blocked' })
-      toast({ title: 'Usuário bloqueado com sucesso!' })
-      loadData()
-    } catch (e) {
-      toast({ title: 'Erro ao bloquear', variant: 'destructive' })
+      toast({ title: 'Erro ao atualizar', description: getErrorMessage(e), variant: 'destructive' })
     }
   }
 
@@ -458,44 +423,103 @@ export default function Admin() {
         </div>
       </div>
 
-      <Card className="bg-black/40 backdrop-blur-xl border-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.05)]">
+      <Card className="bg-black/40 backdrop-blur-xl border-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.05)] overflow-hidden">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-amber-500" />
-            Pendências de Acesso
+            <Users className="w-5 h-5 text-[#D4AF37]" />
+            Diretório de Usuários
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Alunos aguardando aprovação para iniciar a jornada.
+            Gerencie papéis, status e níveis de acesso de todos os usuários da plataforma.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {pendingStudents.length === 0 ? (
-              <p className="text-slate-500 italic text-center py-4 bg-black/40 rounded-lg">
-                Nenhum aluno pendente.
-              </p>
-            ) : (
-              pendingStudents.map((student) => (
-                <div
-                  key={student.id}
-                  className="flex items-center justify-between p-4 bg-black/60 border border-amber-500/20 rounded-lg"
-                >
-                  <div>
-                    <h3 className="text-lg font-medium text-white">{student.name || 'Sem nome'}</h3>
-                    <p className="text-sm text-slate-400">{student.email}</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Registrado em: {new Date(student.created).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => authorizeAccess(student.id)}
-                    className="bg-[#D4AF37] hover:bg-[#B87333] text-black font-bold"
-                  >
-                    Autorizar Acesso
-                  </Button>
-                </div>
-              ))
-            )}
+        <CardContent className="p-0 sm:p-6 overflow-x-auto">
+          <div className="min-w-[800px] rounded-md border border-white/10">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="text-slate-300">Nome / Email</TableHead>
+                  <TableHead className="text-slate-300">Papel</TableHead>
+                  <TableHead className="text-slate-300">Status</TableHead>
+                  <TableHead className="text-slate-300">Nível</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersList.length === 0 ? (
+                  <TableRow className="border-white/10 hover:bg-white/5">
+                    <TableCell colSpan={4} className="text-center text-slate-500 py-6">
+                      Nenhum usuário encontrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  usersList.map((u) => (
+                    <TableRow key={u.id} className="border-white/10 hover:bg-white/5">
+                      <TableCell>
+                        <div className="font-medium text-white">{u.name || 'Sem nome'}</div>
+                        <div className="text-sm text-slate-400">{u.email}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.role}
+                          onValueChange={(val) => updateUser(u.id, { role: val })}
+                        >
+                          <SelectTrigger className="w-32 bg-black/50 border-white/20 text-white h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                            <SelectItem value="student">Aluno</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.status || 'pending'}
+                          onValueChange={(val) => updateUser(u.id, { status: val })}
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              'w-32 h-8 border-white/20 text-white',
+                              u.status === 'active'
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : u.status === 'blocked'
+                                  ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+                            )}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="active">Ativo</SelectItem>
+                            <SelectItem value="blocked">Bloqueado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.unlocked_level?.toString() || '1'}
+                          onValueChange={(val) =>
+                            updateUser(u.id, { unlocked_level: parseInt(val) })
+                          }
+                        >
+                          <SelectTrigger className="w-24 bg-black/50 border-white/20 text-white h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                            <SelectItem value="1">1</SelectItem>
+                            <SelectItem value="2">2</SelectItem>
+                            <SelectItem value="3">3</SelectItem>
+                            <SelectItem value="4">4</SelectItem>
+                            <SelectItem value="5">5</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -710,109 +734,6 @@ export default function Admin() {
               {passwordLoading ? 'Atualizando...' : 'Atualizar Senha'}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-black/40 backdrop-blur-xl border-white/20">
-        <CardHeader>
-          <CardTitle className="text-white">Alunos Ativos</CardTitle>
-          <CardDescription className="text-slate-400">
-            Controle o acesso aos níveis de jornada dos alunos já aprovados.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {students.length === 0 ? (
-              <p className="text-slate-500 italic text-center py-4 bg-black/40 rounded-lg">
-                Nenhum aluno ativo encontrado.
-              </p>
-            ) : (
-              students.map((student) => (
-                <div
-                  key={student.id}
-                  className="flex items-center justify-between p-4 bg-black/60 border border-white/10 rounded-lg"
-                >
-                  <div>
-                    <h3 className="text-lg font-medium text-white">
-                      {student.name || student.email}
-                    </h3>
-                    <p className="text-sm text-slate-400">{student.email}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Label className="text-slate-300 whitespace-nowrap">Nível de Acesso:</Label>
-                    <Select
-                      defaultValue={student.unlocked_level?.toString()}
-                      onValueChange={(val) => updateLevel(student.id, val)}
-                    >
-                      <SelectTrigger className="w-32 bg-black border-[#D4AF37]/50 text-[#D4AF37]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black border-[#D4AF37]/50 text-white">
-                        <SelectItem value="1">1 - Aluno</SelectItem>
-                        <SelectItem value="2">2 - Guardião</SelectItem>
-                        <SelectItem value="3">3 - Instrutor</SelectItem>
-                        <SelectItem value="4">4 - Mestre</SelectItem>
-                        <SelectItem value="5">5 - Soberano</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => blockUser(student.id)}
-                      className="border-red-500/30 text-red-500 hover:bg-red-500/10 hover:text-red-400 ml-2"
-                      title="Bloquear usuário"
-                    >
-                      <Ban className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-black/40 backdrop-blur-xl border-white/20">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Ban className="w-5 h-5 text-red-500" />
-            Alunos Bloqueados
-          </CardTitle>
-          <CardDescription className="text-slate-400">
-            Usuários com acesso revogado à plataforma.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {blockedStudents.length === 0 ? (
-              <p className="text-slate-500 italic text-center py-4 bg-black/40 rounded-lg">
-                Nenhum aluno bloqueado.
-              </p>
-            ) : (
-              blockedStudents.map((student) => (
-                <div
-                  key={student.id}
-                  className="flex items-center justify-between p-4 bg-black/60 border border-red-500/20 rounded-lg"
-                >
-                  <div>
-                    <h3 className="text-lg font-medium text-white">{student.name || 'Sem nome'}</h3>
-                    <p className="text-sm text-slate-400">{student.email}</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Registrado em: {new Date(student.created).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => authorizeAccess(student.id)}
-                    variant="outline"
-                    className="border-green-500/30 text-green-500 hover:bg-green-500/10 hover:text-green-400"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Reativar Acesso
-                  </Button>
-                </div>
-              ))
-            )}
-          </div>
         </CardContent>
       </Card>
 

@@ -30,7 +30,8 @@ const ProtectedRoute = ({
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/" />
-  if (requireActive && user.status === 'pending') return <Navigate to="/welcome-pending" />
+  if (requireActive && user.status !== 'active' && user.role !== 'admin')
+    return <Navigate to="/welcome-pending" />
   return <>{children}</>
 }
 

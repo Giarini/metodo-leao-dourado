@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name,
         role: 'student',
         status: 'pending',
-        unlocked_level: 0,
+        unlocked_level: 1,
       })
       await pb.collection('users').authWithPassword(email, password)
       return { error: null }
