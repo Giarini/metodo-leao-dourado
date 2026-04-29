@@ -9,7 +9,7 @@ import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
-import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
@@ -22,12 +22,15 @@ export default function Signup() {
   const { signUp } = useAuth()
   const { toast } = useToast()
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
+    setFieldErrors({})
 
-    if (!/^\d{8}$/.test(password)) {
-      setErrorMsg('A senha deve conter exatamente 8 números.')
+    if (password.length < 8) {
+      setErrorMsg('A senha deve ter pelo menos 8 caracteres.')
       return
     }
 
@@ -41,13 +44,19 @@ export default function Signup() {
     setIsLoading(false)
 
     if (error) {
-      let msg = getErrorMessage(error)
-      if (msg.includes('already in use') || msg.includes('invalid or already')) {
-        msg = 'Este e-mail já está cadastrado ou é inválido.'
-      } else if (msg.includes('cannot be blank') || msg.includes('required')) {
-        msg = 'Preencha todos os campos obrigatórios.'
+      const extracted = extractFieldErrors(error)
+      if (Object.keys(extracted).length > 0) {
+        setFieldErrors(extracted)
+        setErrorMsg('Por favor, corrija os erros nos campos abaixo.')
+      } else {
+        let msg = getErrorMessage(error)
+        if (msg.includes('already in use') || msg.includes('invalid or already')) {
+          msg = 'Este e-mail já está cadastrado ou é inválido.'
+        } else if (msg.includes('cannot be blank') || msg.includes('required')) {
+          msg = 'Preencha todos os campos obrigatórios.'
+        }
+        setErrorMsg(msg)
       }
-      setErrorMsg(msg)
     } else {
       toast({
         title: 'Conta criada com sucesso!',
@@ -95,7 +104,9 @@ export default function Signup() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
+                placeholder="Seu nome completo"
               />
+              {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="reg-email" className="text-slate-300">
@@ -108,24 +119,27 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
+                placeholder="seu@email.com"
               />
+              {fieldErrors.email && <p className="text-sm text-red-500">{fieldErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="reg-password" className="text-slate-300">
-                Senha (exatamente 8 números)
+                Senha
               </Label>
               <Input
                 id="reg-password"
                 type="password"
-                inputMode="numeric"
-                pattern="\d{8}"
-                maxLength={8}
                 required
+                minLength={8}
                 value={password}
-                onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setPassword(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
-                placeholder="Ex: 12345678"
+                placeholder="Mínimo de 8 caracteres"
               />
+              {fieldErrors.password && (
+                <p className="text-sm text-red-500">{fieldErrors.password}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="reg-password-confirm" className="text-slate-300">
@@ -134,15 +148,16 @@ export default function Signup() {
               <Input
                 id="reg-password-confirm"
                 type="password"
-                inputMode="numeric"
-                pattern="\d{8}"
-                maxLength={8}
                 required
+                minLength={8}
                 value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
-                placeholder="Confirme a senha"
+                placeholder="Confirme sua senha"
               />
+              {fieldErrors.passwordConfirm && (
+                <p className="text-sm text-red-500">{fieldErrors.passwordConfirm}</p>
+              )}
             </div>
             <Button
               type="submit"

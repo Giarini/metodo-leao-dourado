@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import pb from '@/lib/pocketbase/client'
 import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
-import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [token, setToken] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -57,6 +58,7 @@ export default function ResetPassword() {
       return
     }
 
+    setFieldErrors({})
     setIsLoading(true)
     try {
       await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm)
@@ -66,11 +68,16 @@ export default function ResetPassword() {
       })
       navigate('/')
     } catch (error) {
-      toast({
-        title: 'Erro ao redefinir senha',
-        description: 'O link de recuperação é inválido ou expirou. Solicite um novo link.',
-        variant: 'destructive',
-      })
+      const extracted = extractFieldErrors(error)
+      if (Object.keys(extracted).length > 0) {
+        setFieldErrors(extracted)
+      } else {
+        toast({
+          title: 'Erro ao redefinir senha',
+          description: 'O link de recuperação é inválido ou expirou. Solicite um novo link.',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -109,6 +116,9 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
               />
+              {fieldErrors.password && (
+                <p className="text-sm text-red-500">{fieldErrors.password}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -124,6 +134,9 @@ export default function ResetPassword() {
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
               />
+              {fieldErrors.passwordConfirm && (
+                <p className="text-sm text-red-500">{fieldErrors.passwordConfirm}</p>
+              )}
             </div>
 
             <Button
