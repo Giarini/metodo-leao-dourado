@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
@@ -12,6 +14,7 @@ export default function Index() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const navigate = useNavigate()
   const { signIn, user, signOut } = useAuth()
   const { toast } = useToast()
@@ -35,15 +38,12 @@ export default function Index() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMsg('')
     setIsLoading(true)
     const { error } = await signIn(email, password)
     setIsLoading(false)
     if (error) {
-      toast({
-        title: 'Erro ao entrar',
-        description: 'Verifique suas credenciais.',
-        variant: 'destructive',
-      })
+      setErrorMsg('Verifique suas credenciais e tente novamente.')
     }
   }
 
@@ -67,6 +67,13 @@ export default function Index() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-6">
+            {errorMsg && (
+              <Alert variant="destructive" className="bg-red-500/10 border-red-500/50 text-red-500">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro ao entrar</AlertTitle>
+                <AlertDescription>{errorMsg}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="login-email" className="text-slate-300">
                 E-mail

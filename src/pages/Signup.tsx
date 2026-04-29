@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import lionImg from '@/assets/exemplo-app-8ce35.png'
 import { useToast } from '@/hooks/use-toast'
@@ -15,28 +17,22 @@ export default function Signup() {
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
   const navigate = useNavigate()
   const { signUp } = useAuth()
   const { toast } = useToast()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMsg('')
 
     if (!/^\d{8}$/.test(password)) {
-      toast({
-        title: 'Formato inválido',
-        description: 'A senha deve conter exatamente 8 números.',
-        variant: 'destructive',
-      })
+      setErrorMsg('A senha deve conter exatamente 8 números.')
       return
     }
 
     if (password !== passwordConfirm) {
-      toast({
-        title: 'Senhas não conferem',
-        description: 'A senha e a confirmação devem ser iguais.',
-        variant: 'destructive',
-      })
+      setErrorMsg('A senha e a confirmação devem ser iguais.')
       return
     }
 
@@ -45,11 +41,7 @@ export default function Signup() {
     setIsLoading(false)
 
     if (error) {
-      toast({
-        title: 'Erro ao registrar',
-        description: getErrorMessage(error),
-        variant: 'destructive',
-      })
+      setErrorMsg(getErrorMessage(error))
     } else {
       toast({
         title: 'Conta criada com sucesso!',
@@ -80,6 +72,13 @@ export default function Signup() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-6">
+            {errorMsg && (
+              <Alert variant="destructive" className="bg-red-500/10 border-red-500/50 text-red-500">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro ao registrar</AlertTitle>
+                <AlertDescription>{errorMsg}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="reg-name" className="text-slate-300">
                 Nome Completo
