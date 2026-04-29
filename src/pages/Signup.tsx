@@ -29,6 +29,11 @@ export default function Signup() {
     setErrorMsg('')
     setFieldErrors({})
 
+    if (!name || !email || !password) {
+      setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
+      return
+    }
+
     if (password.length < 8) {
       setErrorMsg('A senha deve ter pelo menos 8 caracteres.')
       return
@@ -135,7 +140,7 @@ export default function Signup() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
-                placeholder="Mínimo de 8 caracteres"
+                placeholder="senha 8 números ex: 12345678"
               />
               {fieldErrors.password && (
                 <p className="text-sm text-red-500">{fieldErrors.password}</p>
@@ -153,7 +158,7 @@ export default function Signup() {
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
-                placeholder="Confirme sua senha"
+                placeholder="senha 8 números ex: 12345678"
               />
               {fieldErrors.passwordConfirm && (
                 <p className="text-sm text-red-500">{fieldErrors.passwordConfirm}</p>
