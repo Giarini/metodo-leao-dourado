@@ -41,7 +41,13 @@ export default function Signup() {
     setIsLoading(false)
 
     if (error) {
-      setErrorMsg(getErrorMessage(error))
+      let msg = getErrorMessage(error)
+      if (msg.includes('already in use') || msg.includes('invalid or already')) {
+        msg = 'Este e-mail já está cadastrado ou é inválido.'
+      } else if (msg.includes('cannot be blank') || msg.includes('required')) {
+        msg = 'Preencha todos os campos obrigatórios.'
+      }
+      setErrorMsg(msg)
     } else {
       toast({
         title: 'Conta criada com sucesso!',
