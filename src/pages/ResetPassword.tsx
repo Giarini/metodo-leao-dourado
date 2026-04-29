@@ -62,13 +62,13 @@ export default function ResetPassword() {
       await pb.collection('users').confirmPasswordReset(token, password, passwordConfirm)
       toast({
         title: 'Sucesso',
-        description: 'Senha atualizada com sucesso. Você já pode fazer login.',
+        description: 'Senha alterada com sucesso! Você já pode fazer login.',
       })
       navigate('/')
     } catch (error) {
       toast({
         title: 'Erro ao redefinir senha',
-        description: getErrorMessage(error) || 'O link pode estar expirado ou ser inválido.',
+        description: 'O link de recuperação é inválido ou expirou. Solicite um novo link.',
         variant: 'destructive',
       })
     } finally {

@@ -93,7 +93,7 @@ export default function Index() {
                   Senha
                 </Label>
                 <Link to="/forgot-password" className="text-sm text-[#D4AF37] hover:underline">
-                  Esqueci a senha
+                  Esqueci minha senha
                 </Link>
               </div>
               <Input

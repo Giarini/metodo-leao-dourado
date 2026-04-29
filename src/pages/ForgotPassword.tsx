@@ -23,7 +23,7 @@ export default function ForgotPassword() {
       toast({
         title: 'Sucesso',
         description:
-          'Se existir uma conta com este e-mail, você receberá um link de recuperação em breve. Verifique também sua caixa de spam.',
+          'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha em instantes. Verifique também sua caixa de spam.',
       })
     } catch (error) {
       toast({
@@ -59,8 +59,8 @@ export default function ForgotPassword() {
           {isSent ? (
             <div className="text-center space-y-6">
               <p className="text-slate-300">
-                Se existir uma conta com este e-mail, você receberá um link de recuperação em breve.
-                Verifique também sua caixa de spam.
+                Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha em
+                instantes. Verifique também sua caixa de spam.
               </p>
               <Button asChild className="w-full bg-slate-800 text-white hover:bg-slate-700">
                 <Link to="/">Voltar ao Login</Link>
