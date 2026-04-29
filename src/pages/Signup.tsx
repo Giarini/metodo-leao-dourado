@@ -34,8 +34,13 @@ export default function Signup() {
       return
     }
 
-    if (password.length < 8) {
-      setErrorMsg('A senha deve ter pelo menos 8 caracteres.')
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setErrorMsg('Por favor, insira um e-mail válido.')
+      return
+    }
+
+    if (!/^\d{8}$/.test(password)) {
+      setErrorMsg('A senha deve conter exatamente 8 números (ex: 12345678).')
       return
     }
 
@@ -130,17 +135,22 @@ export default function Signup() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="reg-password" className="text-slate-300">
-                Senha
+                Senha{' '}
+                <span className="text-slate-400 text-xs font-normal ml-1">
+                  (senha 8 números ex: 12345678)
+                </span>
               </Label>
               <Input
                 id="reg-password"
                 type="password"
                 required
                 minLength={8}
+                maxLength={8}
+                pattern="\d{8}"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
-                placeholder="senha 8 números ex: 12345678"
+                placeholder="Digite os 8 números"
               />
               {fieldErrors.password && (
                 <p className="text-sm text-red-500">{fieldErrors.password}</p>
@@ -155,10 +165,12 @@ export default function Signup() {
                 type="password"
                 required
                 minLength={8}
+                maxLength={8}
+                pattern="\d{8}"
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
-                placeholder="senha 8 números ex: 12345678"
+                placeholder="Repita os 8 números"
               />
               {fieldErrors.passwordConfirm && (
                 <p className="text-sm text-red-500">{fieldErrors.passwordConfirm}</p>
