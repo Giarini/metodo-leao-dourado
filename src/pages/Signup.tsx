@@ -110,6 +110,8 @@ export default function Signup() {
               </Label>
               <Input
                 id="reg-name"
+                name="name"
+                autoComplete="name"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -125,6 +127,8 @@ export default function Signup() {
               <Input
                 id="reg-email"
                 type="email"
+                name="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -143,6 +147,8 @@ export default function Signup() {
               <Input
                 id="reg-password"
                 type="password"
+                name="password"
+                autoComplete="new-password"
                 required
                 minLength={8}
                 maxLength={8}
@@ -163,6 +169,8 @@ export default function Signup() {
               <Input
                 id="reg-password-confirm"
                 type="password"
+                name="passwordConfirm"
+                autoComplete="new-password"
                 required
                 minLength={8}
                 maxLength={8}
