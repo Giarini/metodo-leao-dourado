@@ -29,7 +29,7 @@ export default function Signup() {
     setErrorMsg('')
     setFieldErrors({})
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !passwordConfirm) {
       setErrorMsg('Por favor, preencha todos os campos obrigatórios.')
       return
     }
@@ -59,13 +59,17 @@ export default function Signup() {
         setFieldErrors(extracted)
         setErrorMsg('Por favor, corrija os erros nos campos abaixo.')
       } else {
-        let msg = getErrorMessage(error)
-        if (msg.includes('already in use') || msg.includes('invalid or already')) {
-          msg = 'Este e-mail já está cadastrado ou é inválido.'
-        } else if (msg.includes('cannot be blank') || msg.includes('required')) {
-          msg = 'Preencha todos os campos obrigatórios.'
+        const msg = getErrorMessage(error)
+        if (
+          msg.toLowerCase().includes('already in use') ||
+          msg.toLowerCase().includes('already exists')
+        ) {
+          setErrorMsg('Este e-mail já está cadastrado ou é inválido.')
+        } else if (msg.toLowerCase().includes('blank') || msg.toLowerCase().includes('required')) {
+          setErrorMsg('Preencha todos os campos obrigatórios.')
+        } else {
+          setErrorMsg(msg || 'Ocorreu um erro ao criar a conta. Tente novamente.')
         }
-        setErrorMsg(msg)
       }
     } else {
       toast({
@@ -96,7 +100,7 @@ export default function Signup() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleRegister} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-6" noValidate>
             {errorMsg && (
               <Alert variant="destructive" className="bg-red-500/10 border-red-500/50 text-red-500">
                 <AlertCircle className="h-4 w-4" />
@@ -150,9 +154,6 @@ export default function Signup() {
                 name="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
-                maxLength={8}
-                pattern="\d{8}"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
@@ -172,9 +173,6 @@ export default function Signup() {
                 name="passwordConfirm"
                 autoComplete="new-password"
                 required
-                minLength={8}
-                maxLength={8}
-                pattern="\d{8}"
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="bg-black/50 border-[#D4AF37]/30 text-white"
