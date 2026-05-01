@@ -11,6 +11,7 @@ import ResetPassword from './pages/ResetPassword'
 import WelcomePending from './pages/WelcomePending'
 import Levels from './pages/Levels'
 import Dashboard from './pages/Dashboard'
+import Diagnostico from './pages/Diagnostico'
 import DiarioDourado from './pages/DiarioDourado'
 import DiarioCobre from './pages/DiarioCobre'
 import Agenda from './pages/Agenda'
@@ -63,6 +64,7 @@ const App = () => (
           >
             <Route path="/niveis" element={<Levels />} />
             <Route path="/nivel/:id" element={<Dashboard />} />
+            <Route path="/diagnostico" element={<Diagnostico />} />
             <Route path="/diario-dourado" element={<DiarioDourado />} />
             <Route path="/diario-cobre" element={<DiarioCobre />} />
             <Route path="/agenda" element={<Agenda />} />

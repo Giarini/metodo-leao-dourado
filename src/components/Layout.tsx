@@ -8,6 +8,7 @@ import {
   Crown,
   ShieldAlert,
   Settings,
+  Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -26,6 +27,7 @@ export default function Layout() {
   const navItems = [
     { icon: Crown, label: 'Níveis', path: '/niveis' },
     { icon: Book, label: 'Painel', path: '/nivel/1' },
+    { icon: Activity, label: 'Diagnóstico', path: '/diagnostico' },
     { icon: CheckSquare, label: 'Agenda', path: '/agenda' },
     { icon: MessageSquare, label: 'Mentor', path: '/mentor' },
     { icon: BarChart, label: 'Relatórios', path: '/relatorios' },
