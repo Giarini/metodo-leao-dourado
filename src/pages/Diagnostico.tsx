@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { useRealtime } from '@/hooks/use-realtime'
 import { createDiagnostic, getDiagnostics, type DiagnosticRecord } from '@/services/diagnostics'
+import { getActions, updateAction, type ActionRecord } from '@/services/actions'
 import { useToast } from '@/hooks/use-toast'
 import { DiagnosticMenu } from '@/components/diagnostico/DiagnosticMenu'
 import { DiagnosticQuestionnaire } from '@/components/diagnostico/DiagnosticQuestionnaire'
@@ -16,22 +17,27 @@ export default function Diagnostico() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentResult, setCurrentResult] = useState<DiagnosticRecord | null>(null)
   const [history, setHistory] = useState<DiagnosticRecord[]>([])
+  const [actions, setActions] = useState<ActionRecord[]>([])
 
-  const loadHistory = async () => {
+  const loadData = async () => {
     if (!user) return
     try {
-      const data = await getDiagnostics()
-      setHistory(data)
+      const [diagData, actionsData] = await Promise.all([getDiagnostics(), getActions()])
+      setHistory(diagData)
+      setActions(actionsData)
     } catch (e) {
       console.error(e)
     }
   }
 
   useEffect(() => {
-    loadHistory()
+    loadData()
   }, [user])
   useRealtime('diagnostics', () => {
-    loadHistory()
+    loadData()
+  })
+  useRealtime('actions', () => {
+    loadData()
   })
 
   const handleStart = (pillar: string) => {
@@ -58,8 +64,19 @@ export default function Diagnostico() {
     }
   }
 
+  const handleCompleteAction = async (id: string) => {
+    try {
+      await updateAction(id, { status: 'completed' })
+      toast({ title: 'Micro-ação concluída! Parabéns!' })
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message })
+    }
+  }
+
   if (mode === 'results' && currentResult) {
-    return <DiagnosticResults result={currentResult} onBack={() => setMode('menu')} />
+    return (
+      <DiagnosticResults result={currentResult} history={history} onBack={() => setMode('menu')} />
+    )
   }
 
   if (mode === 'questionnaire') {
@@ -77,6 +94,8 @@ export default function Diagnostico() {
     <DiagnosticMenu
       onStart={handleStart}
       history={history}
+      actions={actions}
+      onCompleteAction={handleCompleteAction}
       onViewResult={(r) => {
         setCurrentResult(r)
         setMode('results')

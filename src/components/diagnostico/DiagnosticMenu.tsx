@@ -13,8 +13,14 @@ import {
   Layers,
   Activity,
   ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  CheckCircle2,
 } from 'lucide-react'
 import type { DiagnosticRecord } from '@/services/diagnostics'
+import type { ActionRecord } from '@/services/actions'
+import { DiagnosticRadarChart } from './DiagnosticRadarChart'
 
 const ICONS: Record<string, any> = {
   Relacionamentos: Heart,
@@ -29,10 +35,35 @@ const ICONS: Record<string, any> = {
 interface Props {
   onStart: (pillar: string) => void
   history: DiagnosticRecord[]
+  actions: ActionRecord[]
+  onCompleteAction: (id: string) => void
   onViewResult: (record: DiagnosticRecord) => void
 }
 
-export function DiagnosticMenu({ onStart, history, onViewResult }: Props) {
+function getEvolution(history: DiagnosticRecord[], currentRecord: DiagnosticRecord) {
+  const prevRecord = history.find(
+    (r) => r.pillar_type === currentRecord.pillar_type && r.id !== currentRecord.id,
+  )
+  if (prevRecord) {
+    return { prevScore: prevRecord.score, diff: currentRecord.score - prevRecord.score }
+  }
+  return { prevScore: null, diff: 0 }
+}
+
+export function DiagnosticMenu({
+  onStart,
+  history,
+  actions,
+  onCompleteAction,
+  onViewResult,
+}: Props) {
+  const pendingFollowUps = actions.filter((a) => {
+    if (a.status !== 'pending' || a.type !== 'microaction') return false
+    const origDate = new Date(a.original_date)
+    const diffDays = (new Date().getTime() - origDate.getTime()) / (1000 * 3600 * 24)
+    return diffDays >= 2
+  })
+
   return (
     <div className="space-y-12 animate-fade-in-up">
       <div className="text-center space-y-4 mt-4">
@@ -43,6 +74,38 @@ export function DiagnosticMenu({ onStart, history, onViewResult }: Props) {
           Escolha o pilar para efetuar o seu diagnóstico semanal ou escolha total para fazer o
           diagnóstico completo dos 7 pilares.
         </p>
+      </div>
+
+      {pendingFollowUps.length > 0 && (
+        <div className="max-w-5xl mx-auto space-y-4">
+          <h2 className="text-xl font-serif text-[#D4AF37] flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5" /> Acompanhamento de Micro-ações
+          </h2>
+          <div className="grid grid-cols-1 gap-3">
+            {pendingFollowUps.map((action) => (
+              <Card key={action.id} className="bg-[#D4AF37]/10 border-[#D4AF37]/30">
+                <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <p className="text-slate-200 font-medium">
+                      Você conseguiu cumprir a micro-ação:{' '}
+                      <strong className="text-white">"{action.title}"</strong>?
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => onCompleteAction(action.id)}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shrink-0"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Concluída
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto">
+        <DiagnosticRadarChart history={history} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
@@ -107,9 +170,32 @@ export function DiagnosticMenu({ onStart, history, onViewResult }: Props) {
                     </span>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <p className="text-sm text-slate-300">
-                      Score Favorável: <strong className="text-white">{record.score}</strong>
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm text-slate-300">
+                        Score: <strong className="text-white">{record.score}</strong>
+                      </p>
+                      {(() => {
+                        const { diff, prevScore } = getEvolution(history, record)
+                        if (prevScore === null) return null
+                        if (diff > 0)
+                          return (
+                            <span className="flex items-center text-xs text-emerald-400 font-medium">
+                              <TrendingUp className="w-3 h-3 mr-1" /> +{diff}
+                            </span>
+                          )
+                        if (diff < 0)
+                          return (
+                            <span className="flex items-center text-xs text-rose-400 font-medium">
+                              <TrendingDown className="w-3 h-3 mr-1" /> {diff}
+                            </span>
+                          )
+                        return (
+                          <span className="flex items-center text-xs text-slate-400 font-medium">
+                            <Minus className="w-3 h-3 mr-1" /> =
+                          </span>
+                        )
+                      })()}
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"

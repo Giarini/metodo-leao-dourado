@@ -77,5 +77,30 @@ onRecordCreateRequest((e) => {
   e.record.set('status', status)
   e.record.set('ai_feedback', aiFeedback)
 
+  try {
+    const actionsCol = $app.findCollectionByNameOrId('actions')
+    const actionRecord = new Record(actionsCol)
+    actionRecord.set('user', e.record.get('user_id'))
+
+    let targetPillar = pillarCount === 1 ? Object.keys(pillarScores)[0] : worstPillar
+    let microActionTitle =
+      worstScore <= 5
+        ? `Agir em uma pequena atitude diária para o pilar ${targetPillar}`
+        : `Revisar e manter as boas práticas no pilar ${targetPillar}`
+
+    actionRecord.set('title', microActionTitle)
+    actionRecord.set('type', 'microaction')
+    actionRecord.set('status', 'pending')
+
+    const now = new Date()
+    actionRecord.set('original_date', now.toISOString())
+    const deadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    actionRecord.set('deadline', deadline.toISOString())
+
+    $app.save(actionRecord)
+  } catch (err) {
+    $app.logger().error('Failed to create microaction from diagnostic', 'error', err.message)
+  }
+
   e.next()
 }, 'diagnostics')

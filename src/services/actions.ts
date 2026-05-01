@@ -1,6 +1,19 @@
 import pb from '@/lib/pocketbase/client'
 
-export const getActions = () => pb.collection('actions').getFullList({ sort: 'deadline' })
+export interface ActionRecord {
+  id: string
+  user: string
+  title: string
+  type: string
+  status: string
+  deadline: string
+  original_date: string
+  created: string
+  updated: string
+}
+
+export const getActions = () =>
+  pb.collection('actions').getFullList<ActionRecord>({ sort: 'deadline' })
 
 export const createAction = (data: {
   user: string
