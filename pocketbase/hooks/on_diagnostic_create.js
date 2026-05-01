@@ -1,6 +1,5 @@
-onRecordCreateRequest((e) => {
-  const body = e.requestInfo().body || {}
-  let answers = body.answers || {}
+onRecordCreate((e) => {
+  let answers = e.record.get('answers') || {}
 
   // Defensively parse if answers somehow arrive stringified
   if (typeof answers === 'string') {
