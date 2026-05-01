@@ -33,9 +33,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = async () => {
       if (pb.authStore.isValid) {
         try {
-          await pb.collection('users').authRefresh()
+          const authData = await pb.collection('users').authRefresh()
+          if (authData.record.status === 'blocked') {
+            pb.authStore.clear()
+            if (mounted) setUser(null)
+          }
         } catch (err) {
           pb.authStore.clear()
+          if (mounted) setUser(null)
         }
       }
       if (mounted) setLoading(false)
@@ -44,7 +49,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth()
 
     const unsubscribe = pb.authStore.onChange((_token, record) => {
-      if (mounted) setUser(record)
+      if (record?.status === 'blocked') {
+        pb.authStore.clear()
+        if (mounted) setUser(null)
+      } else {
+        if (mounted) setUser(record)
+      }
     })
 
     return () => {
@@ -82,7 +92,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await pb.collection('users').authWithPassword(email, password)
+      const authData = await pb.collection('users').authWithPassword(email, password)
+      if (authData.record.status === 'blocked') {
+        pb.authStore.clear()
+        return { error: new Error('Sua conta está bloqueada e não pode acessar o sistema.') }
+      }
       return { error: null }
     } catch (error) {
       return { error }

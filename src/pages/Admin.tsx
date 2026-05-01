@@ -20,7 +20,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ShieldAlert, BookOpen, FileText, Trash2, Upload, Lock, Loader2, Users } from 'lucide-react'
+import {
+  ShieldAlert,
+  BookOpen,
+  FileText,
+  Trash2,
+  Upload,
+  Lock,
+  Loader2,
+  Users,
+  Plus,
+  Edit2,
+  Ban,
+  CheckCircle,
+  Search,
+} from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
@@ -49,6 +72,20 @@ export default function Admin() {
   const [processingStatus, setProcessingStatus] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileToDelete, setFileToDelete] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
+
+  const [formData, setFormData] = useState({
+    id: '',
+    name: '',
+    email: '',
+    password: '',
+    role: 'student',
+    status: 'active',
+    unlocked_level: 1,
+  })
 
   const splitTextIntoChunks = (text: string, maxChunkSize = 3500): string[] => {
     const chunks: string[] = []
@@ -151,6 +188,103 @@ export default function Admin() {
     } catch (e) {
       toast({ title: 'Erro ao atualizar', description: getErrorMessage(e), variant: 'destructive' })
     }
+  }
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await pb.collection('users').create({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        passwordConfirm: formData.password,
+        role: formData.role,
+        status: formData.status,
+        unlocked_level: Number(formData.unlocked_level),
+      })
+      toast({ title: 'Usuário criado com sucesso!' })
+      setIsCreateModalOpen(false)
+      loadData()
+    } catch (err) {
+      toast({ title: 'Erro ao criar', description: getErrorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const dataToUpdate: any = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        status: formData.status,
+        unlocked_level: Number(formData.unlocked_level),
+      }
+      if (formData.password) {
+        dataToUpdate.password = formData.password
+        dataToUpdate.passwordConfirm = formData.password
+      }
+      await pb.collection('users').update(formData.id, dataToUpdate)
+      toast({ title: 'Usuário atualizado com sucesso!' })
+      setIsEditModalOpen(false)
+      loadData()
+    } catch (err) {
+      toast({
+        title: 'Erro ao atualizar',
+        description: getErrorMessage(err),
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const executeDeleteUser = async () => {
+    if (!userToDelete) return
+    try {
+      await pb.collection('users').delete(userToDelete)
+      toast({ title: 'Usuário removido com sucesso!' })
+      loadData()
+    } catch (err) {
+      toast({ title: 'Erro ao remover', description: getErrorMessage(err), variant: 'destructive' })
+    } finally {
+      setUserToDelete(null)
+    }
+  }
+
+  const toggleUserBlock = async (u: any) => {
+    const newStatus = u.status === 'blocked' ? 'active' : 'blocked'
+    await updateUser(u.id, { status: newStatus })
+  }
+
+  const filteredUsers = usersList.filter(
+    (u) =>
+      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  const openEditModal = (u: any) => {
+    setFormData({
+      id: u.id,
+      name: u.name || '',
+      email: u.email || '',
+      password: '',
+      role: u.role || 'student',
+      status: u.status || 'pending',
+      unlocked_level: u.unlocked_level || 1,
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const openCreateModal = () => {
+    setFormData({
+      id: '',
+      name: '',
+      email: '',
+      password: '',
+      role: 'student',
+      status: 'active',
+      unlocked_level: 1,
+    })
+    setIsCreateModalOpen(true)
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -424,17 +558,36 @@ export default function Admin() {
       </div>
 
       <Card className="bg-black/40 backdrop-blur-xl border-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.05)] overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-[#D4AF37]" />
-            Diretório de Usuários
-          </CardTitle>
-          <CardDescription className="text-slate-400">
-            Gerencie papéis, status e níveis de acesso de todos os usuários da plataforma.
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#D4AF37]" />
+              Diretório de Usuários
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Gerencie papéis, status e níveis de acesso de todos os usuários da plataforma.
+            </CardDescription>
+          </div>
+          <Button
+            onClick={openCreateModal}
+            className="bg-[#D4AF37] hover:bg-[#B87333] text-black font-bold whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Criar Usuário
+          </Button>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6 overflow-x-auto">
-          <div className="min-w-[800px] rounded-md border border-white/10">
+        <CardContent className="p-0 sm:p-6 overflow-x-auto space-y-4">
+          <div className="relative max-w-sm px-4 sm:px-0 mt-4 sm:mt-0">
+            <Search className="absolute left-7 sm:left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Buscar por nome ou email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-black/50 border-white/20 text-white"
+            />
+          </div>
+
+          <div className="min-w-[900px] rounded-md border border-white/10 mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-transparent">
@@ -442,78 +595,104 @@ export default function Admin() {
                   <TableHead className="text-slate-300">Papel</TableHead>
                   <TableHead className="text-slate-300">Status</TableHead>
                   <TableHead className="text-slate-300">Nível</TableHead>
+                  <TableHead className="text-slate-300">Criado em</TableHead>
+                  <TableHead className="text-slate-300 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersList.length === 0 ? (
+                {filteredUsers.length === 0 ? (
                   <TableRow className="border-white/10 hover:bg-white/5">
-                    <TableCell colSpan={4} className="text-center text-slate-500 py-6">
+                    <TableCell colSpan={6} className="text-center text-slate-500 py-6">
                       Nenhum usuário encontrado.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  usersList.map((u) => (
+                  filteredUsers.map((u) => (
                     <TableRow key={u.id} className="border-white/10 hover:bg-white/5">
                       <TableCell>
                         <div className="font-medium text-white">{u.name || 'Sem nome'}</div>
                         <div className="text-sm text-slate-400">{u.email}</div>
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={u.role}
-                          onValueChange={(val) => updateUser(u.id, { role: val })}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'border-white/20 uppercase text-xs',
+                            u.role === 'admin'
+                              ? 'bg-purple-500/20 text-purple-400'
+                              : 'bg-blue-500/20 text-blue-400',
+                          )}
                         >
-                          <SelectTrigger className="w-32 bg-black/50 border-white/20 text-white h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-950 border-white/20 text-white">
-                            <SelectItem value="student">Aluno</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          {u.role === 'admin' ? 'Admin' : 'Aluno'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={u.status || 'pending'}
-                          onValueChange={(val) => updateUser(u.id, { status: val })}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'border-white/20 uppercase text-xs',
+                            u.status === 'active'
+                              ? 'bg-green-500/20 text-green-400'
+                              : u.status === 'blocked'
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-amber-500/20 text-amber-400',
+                          )}
                         >
-                          <SelectTrigger
-                            className={cn(
-                              'w-32 h-8 border-white/20 text-white',
-                              u.status === 'active'
-                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                : u.status === 'blocked'
-                                  ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-                            )}
+                          {u.status === 'active'
+                            ? 'Ativo'
+                            : u.status === 'blocked'
+                              ? 'Bloqueado'
+                              : 'Pendente'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-white bg-white/10 px-2 py-1 rounded text-xs font-bold">
+                          Nível {u.unlocked_level || 1}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-slate-400 text-sm">
+                        {new Date(u.created).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditModal(u)}
+                            className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                            title="Editar"
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-950 border-white/20 text-white">
-                            <SelectItem value="pending">Pendente</SelectItem>
-                            <SelectItem value="active">Ativo</SelectItem>
-                            <SelectItem value="blocked">Bloqueado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={u.unlocked_level?.toString() || '1'}
-                          onValueChange={(val) =>
-                            updateUser(u.id, { unlocked_level: parseInt(val) })
-                          }
-                        >
-                          <SelectTrigger className="w-24 bg-black/50 border-white/20 text-white h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-950 border-white/20 text-white">
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="2">2</SelectItem>
-                            <SelectItem value="3">3</SelectItem>
-                            <SelectItem value="4">4</SelectItem>
-                            <SelectItem value="5">5</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleUserBlock(u)}
+                            className={cn(
+                              'h-8 w-8',
+                              u.status === 'blocked'
+                                ? 'text-green-400 hover:text-green-300 hover:bg-green-400/10'
+                                : 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/10',
+                            )}
+                            title={u.status === 'blocked' ? 'Desbloquear' : 'Bloquear'}
+                          >
+                            {u.status === 'blocked' ? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : (
+                              <Ban className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={u.id === user?.id}
+                            onClick={() => setUserToDelete(u.id)}
+                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-400/10 disabled:opacity-30 disabled:hover:bg-transparent"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -760,6 +939,225 @@ export default function Admin() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent className="bg-zinc-950 border-white/20 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir este usuário?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Esta ação é permanente e removerá todos os dados vinculados a este usuário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeDeleteUser}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Excluir Usuário
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="bg-zinc-950 border-white/20 text-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Criar Novo Usuário</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Adicione um novo usuário ao sistema informando seus dados básicos.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Nome</Label>
+              <Input
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Email</Label>
+              <Input
+                required
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Senha (mínimo 8 caracteres)</Label>
+              <Input
+                required
+                type="password"
+                minLength={8}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Papel</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(v: string) => setFormData({ ...formData, role: v })}
+                >
+                  <SelectTrigger className="bg-black/50 border-white/20 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                    <SelectItem value="student">Aluno</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v: string) => setFormData({ ...formData, status: v })}
+                >
+                  <SelectTrigger className="bg-black/50 border-white/20 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="blocked">Bloqueado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="border-white/20 text-slate-300 hover:text-white"
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-[#D4AF37] text-black hover:bg-[#B87333]">
+                Criar Usuário
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="bg-zinc-950 border-white/20 text-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Modifique os dados do usuário. Deixe a senha em branco para não alterá-la.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditUser} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Nome</Label>
+              <Input
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Email</Label>
+              <Input
+                required
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Nova Senha (opcional)</Label>
+              <Input
+                type="password"
+                minLength={8}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Deixe em branco para não alterar"
+                className="bg-black/50 border-white/20 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Papel</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(v: string) => setFormData({ ...formData, role: v })}
+                >
+                  <SelectTrigger className="bg-black/50 border-white/20 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                    <SelectItem value="student">Aluno</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v: string) => setFormData({ ...formData, status: v })}
+                >
+                  <SelectTrigger className="bg-black/50 border-white/20 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="blocked">Bloqueado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Nível</Label>
+                <Select
+                  value={formData.unlocked_level.toString()}
+                  onValueChange={(v: string) =>
+                    setFormData({ ...formData, unlocked_level: Number(v) })
+                  }
+                >
+                  <SelectTrigger className="bg-black/50 border-white/20 text-white px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                    {[1, 2, 3, 4, 5].map((lvl) => (
+                      <SelectItem key={lvl} value={lvl.toString()}>
+                        {lvl}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                className="border-white/20 text-slate-300 hover:text-white"
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-[#D4AF37] text-black hover:bg-[#B87333]">
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
