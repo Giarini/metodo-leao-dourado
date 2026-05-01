@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Book,
@@ -13,14 +12,11 @@ import {
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from '@/components/ui/sheet'
-import { MentorChat } from '@/components/MentorChat'
 
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
-  const [isMentorOpen, setIsMentorOpen] = useState(false)
 
   const handleLogout = () => {
     signOut()
@@ -105,32 +101,6 @@ export default function Layout() {
         <div className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-8 animate-fade-in-up">
           <Outlet />
         </div>
-
-        {/* Floating Mentor Button for Mobile on specific routes */}
-        {(location.pathname === '/niveis' || location.pathname.startsWith('/nivel/')) && (
-          <div className="md:hidden fixed bottom-24 right-4 z-40">
-            <Sheet open={isMentorOpen} onOpenChange={setIsMentorOpen}>
-              <SheetTrigger asChild>
-                <Button className="w-14 h-14 rounded-full bg-[#D4AF37] text-black shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:bg-[#AA8A2A] hover:scale-105 transition-all flex items-center justify-center p-0">
-                  <MessageSquare className="w-6 h-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="bottom"
-                className="h-[85vh] bg-black/95 border-t border-[#D4AF37]/30 p-0 flex flex-col rounded-t-3xl"
-              >
-                <SheetHeader className="p-4 border-b border-[#D4AF37]/20 text-left flex flex-row items-center justify-between">
-                  <SheetTitle className="text-[#D4AF37] font-serif text-xl m-0">
-                    Mentor IA
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-hidden p-0 relative">
-                  <MentorChat isWidget />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        )}
       </main>
 
       <nav className="md:hidden fixed bottom-0 w-full bg-black/90 backdrop-blur-xl border-t border-[#D4AF37]/20 flex items-center justify-around p-2 z-50">
@@ -139,29 +109,13 @@ export default function Layout() {
             location.pathname === item.path ||
             (location.pathname.startsWith(item.path) && item.path !== '/niveis')
 
-          if (item.path === '/mentor') {
-            return (
-              <button
-                key={item.path}
-                onClick={() => setIsMentorOpen(true)}
-                className={cn(
-                  'flex flex-col items-center p-2 rounded-lg transition-colors',
-                  isMentorOpen ? 'text-[#D4AF37]' : 'text-slate-500',
-                )}
-              >
-                <item.icon className="w-6 h-6 mb-1" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </button>
-            )
-          }
-
           return (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
                 'flex flex-col items-center p-2 rounded-lg transition-colors',
-                isActive && !isMentorOpen ? 'text-[#D4AF37]' : 'text-slate-500',
+                isActive ? 'text-[#D4AF37]' : 'text-slate-500',
               )}
             >
               <item.icon className="w-6 h-6 mb-1" />

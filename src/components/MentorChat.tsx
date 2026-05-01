@@ -39,14 +39,7 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
   const { user } = useAuth()
   const location = useLocation()
   const params = useParams()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'init',
-      role: 'ai',
-      content:
-        'Olá! Sou seu Mentor IA Fernando Fontes. Como posso guiar sua jornada de metacognição hoje?',
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -74,7 +67,7 @@ export function MentorChat({ isWidget = false }: { isWidget?: boolean }) {
             group = { date: dateLabel, messages: [] }
             orderedGroups.push(group)
           }
-          group.messages.push({
+          group.messages.unshift({
             id: h.id || Math.random().toString(),
             role: h.role === 'assistant' ? 'ai' : 'user',
             content: h.content,
