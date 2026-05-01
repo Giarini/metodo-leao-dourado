@@ -8,42 +8,24 @@ onRecordCreate((e) => {
     } catch (err) {}
   }
 
-  const pillarScores = {}
-  let pillarCount = 0
+  let score = 0
+  let singlePillar = null
 
-  // Calculate score for each pillar
+  // Calculate score based on total "Favorável" answers case-insensitively
   for (const pillar in answers) {
-    pillarCount++
+    singlePillar = pillar
     const pAnswers = answers[pillar]
-    let pFav = 0
     for (const q in pAnswers) {
-      if (pAnswers[q] === 'Favorável') {
-        pFav++
+      const val = String(pAnswers[q] || '')
+        .trim()
+        .toLowerCase()
+      if (val === 'favorável' || val === 'favoravel') {
+        score++
       }
     }
-    pillarScores[pillar] = pFav
   }
 
-  let worstPillar = null
-  let worstScore = 9 // Higher than possible max per pillar (8)
-
-  // Identify the worst pillar
-  for (const pillar in pillarScores) {
-    if (pillarScores[pillar] < worstScore) {
-      worstScore = pillarScores[pillar]
-      worstPillar = pillar
-    }
-  }
-
-  if (pillarCount === 0) {
-    worstScore = 0
-    worstPillar = 'Nenhum'
-  }
-
-  // The final score is 0 to 8 based on the lowest pillar (which represents the status threshold)
-  const score = worstScore
-
-  // Determine status based on the lowest pillar score (0-8 scale)
+  // Determine status based on the score (0-8 scale)
   let status = ''
   if (score <= 2) {
     status = 'Inhaca Mental Severa'
@@ -63,32 +45,17 @@ onRecordCreate((e) => {
   let aiFeedback = `Análise do seu diagnóstico concluída. Baseado nas suas respostas, seu status atual é: **${status}**.\n\n`
   aiFeedback += `Ação recomendada geral: **${actionPlan}**\n\n`
 
-  if (pillarCount === 1) {
-    // Logic for individual pillar
-    const singlePillar = Object.keys(pillarScores)[0]
-    const singleScore = pillarScores[singlePillar] || 0
+  const targetPillar = e.record.get('pillar_type') || singlePillar || 'o pilar analisado'
 
-    aiFeedback += `Avaliando o pilar **${singlePillar}**, você obteve **${singleScore}/8 pontos positivos**.\n\n`
+  aiFeedback += `Avaliando o pilar **${targetPillar}**, você obteve **${score}/8 pontos positivos**.\n\n`
 
-    if (singleScore <= 5) {
-      aiFeedback += `**Micro-ações recomendadas para ${singlePillar}:**\n`
-      aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
-      aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
-      aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
-    } else {
-      aiFeedback += `O pilar **${singlePillar}** apresenta uma pontuação satisfatória. Continue com a manutenção e vigilância constante.`
-    }
+  if (score <= 5) {
+    aiFeedback += `**Micro-ações recomendadas para ${targetPillar}:**\n`
+    aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
+    aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
+    aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
   } else {
-    // Logic for all pillars
-    if (score <= 5) {
-      aiFeedback += `O pilar que mais precisa de atenção no momento é **${worstPillar}** com **${score}/8 pontos positivos**.\n\n`
-      aiFeedback += `**Micro-ações recomendadas para ${worstPillar}:**\n`
-      aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
-      aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
-      aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
-    } else {
-      aiFeedback += `Todos os pilares analisados apresentam uma pontuação satisfatória (pior nota foi **${score}/8 pontos positivos**). Continue com a manutenção e vigilância constante das suas áreas da vida.`
-    }
+    aiFeedback += `O pilar **${targetPillar}** apresenta uma pontuação satisfatória. Continue com a manutenção e vigilância constante.`
   }
 
   // Persist computed values
@@ -102,7 +69,6 @@ onRecordCreate((e) => {
     const actionRecord = new Record(actionsCol)
     actionRecord.set('user', e.record.get('user_id'))
 
-    let targetPillar = pillarCount === 1 ? Object.keys(pillarScores)[0] : worstPillar
     let microActionTitle =
       score <= 5
         ? `Agir em uma pequena atitude diária para o pilar ${targetPillar}`
