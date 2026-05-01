@@ -67,10 +67,10 @@ export function DiagnosticResults({ result, history, onBack }: Props) {
             >
               Ação:{' '}
               {result.status === 'Inhaca Mental Severa'
-                ? 'Foco total em fechar o parêntese.'
+                ? 'Foco total em fechar o parêntese'
                 : result.status === 'Fase de Transição'
-                  ? 'Criar plano de ação (Colchetes).'
-                  : 'Manutenção e vigilância (Chaves).'}
+                  ? 'Criar plano de ação (Colchetes)'
+                  : 'Manutenção e vigilância (Chaves)'}
             </span>
             {evolution.prevScore !== null && (
               <span

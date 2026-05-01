@@ -50,11 +50,11 @@ onRecordCreate((e) => {
   const targetPillar = e.record.get('pillar_type') || singlePillar || 'o pilar analisado'
 
   // Build the AI Feedback dynamically
-  let aiFeedback = `Análise do seu diagnóstico para o pilar ${targetPillar} concluída.\n`
-  aiFeedback += `Pontuação: ${score}/8 pontos positivos.\n`
-  aiFeedback += `Status Atual: ${status}\n`
-  aiFeedback += `Ação Recomendada: ${actionPlan}\n`
-  aiFeedback += `${neuroExplanation}`
+  let aiFeedback = `- Análise do seu diagnóstico para o pilar ${targetPillar} concluída.\n`
+  aiFeedback += `- Pontuação: ${score}/8 pontos positivos.\n`
+  aiFeedback += `- Status Atual: ${status}\n`
+  aiFeedback += `- Ação Recomendada: ${actionPlan}\n`
+  aiFeedback += `- ${neuroExplanation}`
 
   // Persist computed values
   e.record.set('score', score)
