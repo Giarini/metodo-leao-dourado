@@ -1,11 +1,32 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { BookOpen, CalendarCheck, Sparkles, AlertTriangle } from 'lucide-react'
+import { CalendarCheck, Sparkles, AlertTriangle, Activity } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { useRealtime } from '@/hooks/use-realtime'
+import { getDiagnostics, type DiagnosticRecord } from '@/services/diagnostics'
+import { cn } from '@/lib/utils'
 import imgMentor from '../assets/fementoria-b538d.png'
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const [latestDiagnostic, setLatestDiagnostic] = useState<DiagnosticRecord | null>(null)
+
+  const loadDiagnostics = () => {
+    getDiagnostics()
+      .then((data) => {
+        if (data.length > 0) setLatestDiagnostic(data[0])
+      })
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    loadDiagnostics()
+  }, [])
+
+  useRealtime('diagnostics', () => {
+    loadDiagnostics()
+  })
 
   return (
     <div className="space-y-8">
@@ -17,6 +38,57 @@ export default function Dashboard() {
           Bem-vindo à sua central de controle de microações e metacognição.
         </p>
       </div>
+
+      {latestDiagnostic && (
+        <Card
+          onClick={() => navigate('/diagnostico')}
+          className={cn(
+            'cursor-pointer border backdrop-blur-xl transition-all duration-300 hover:shadow-lg',
+            latestDiagnostic.status === 'Vida Equilibrada'
+              ? 'bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/50'
+              : latestDiagnostic.status === 'Fase de Transição'
+                ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50'
+                : 'bg-rose-500/10 border-rose-500/30 hover:border-rose-500/50',
+          )}
+        >
+          <CardHeader className="flex flex-row items-center gap-6 p-6">
+            <div
+              className={cn(
+                'w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0',
+                latestDiagnostic.status === 'Vida Equilibrada'
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : latestDiagnostic.status === 'Fase de Transição'
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'bg-rose-500/20 text-rose-400',
+              )}
+            >
+              <Activity className="w-7 h-7" />
+            </div>
+            <div>
+              <CardTitle
+                className={cn(
+                  'font-serif text-2xl mb-1',
+                  latestDiagnostic.status === 'Vida Equilibrada'
+                    ? 'text-emerald-400'
+                    : latestDiagnostic.status === 'Fase de Transição'
+                      ? 'text-amber-400'
+                      : 'text-rose-400',
+                )}
+              >
+                Status Atual: {latestDiagnostic.status}
+              </CardTitle>
+              <CardDescription className="text-slate-300 text-base font-medium">
+                Ação Requerida:{' '}
+                {latestDiagnostic.status === 'Inhaca Mental Severa'
+                  ? 'Foco total em fechar o parêntese.'
+                  : latestDiagnostic.status === 'Fase de Transição'
+                    ? 'Criar plano de ação (Colchetes).'
+                    : 'Manutenção e vigilância (Chaves).'}
+              </CardDescription>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card

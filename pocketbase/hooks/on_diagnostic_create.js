@@ -9,7 +9,6 @@ onRecordCreateRequest((e) => {
     } catch (err) {}
   }
 
-  let totalFavorable = 0
   const pillarScores = {}
   let pillarCount = 0
 
@@ -21,13 +20,10 @@ onRecordCreateRequest((e) => {
     for (const q in pAnswers) {
       if (pAnswers[q] === 'Favorável') {
         pFav++
-        totalFavorable++
       }
     }
     pillarScores[pillar] = pFav
   }
-
-  const score = totalFavorable
 
   let worstPillar = null
   let worstScore = 9 // Higher than possible max per pillar (8)
@@ -45,11 +41,14 @@ onRecordCreateRequest((e) => {
     worstPillar = 'Nenhum'
   }
 
+  // The final score is 0 to 8 based on the lowest pillar (which represents the status threshold)
+  const score = worstScore
+
   // Determine status based on the lowest pillar score (0-8 scale)
   let status = ''
-  if (worstScore <= 2) {
+  if (score <= 2) {
     status = 'Inhaca Mental Severa'
-  } else if (worstScore <= 5) {
+  } else if (score <= 5) {
     status = 'Fase de Transição'
   } else {
     status = 'Vida Equilibrada'
@@ -82,14 +81,14 @@ onRecordCreateRequest((e) => {
     }
   } else {
     // Logic for all pillars
-    if (worstScore <= 5) {
-      aiFeedback += `O pilar que mais precisa de atenção no momento é **${worstPillar}** com **${worstScore}/8 pontos positivos**.\n\n`
+    if (score <= 5) {
+      aiFeedback += `O pilar que mais precisa de atenção no momento é **${worstPillar}** com **${score}/8 pontos positivos**.\n\n`
       aiFeedback += `**Micro-ações recomendadas para ${worstPillar}:**\n`
       aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
       aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
       aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
     } else {
-      aiFeedback += `Todos os pilares analisados apresentam uma pontuação satisfatória (pior nota foi **${worstScore}/8 pontos positivos**). Continue com a manutenção e vigilância constante das suas áreas da vida.`
+      aiFeedback += `Todos os pilares analisados apresentam uma pontuação satisfatória (pior nota foi **${score}/8 pontos positivos**). Continue com a manutenção e vigilância constante das suas áreas da vida.`
     }
   }
 
@@ -106,7 +105,7 @@ onRecordCreateRequest((e) => {
 
     let targetPillar = pillarCount === 1 ? Object.keys(pillarScores)[0] : worstPillar
     let microActionTitle =
-      worstScore <= 5
+      score <= 5
         ? `Agir em uma pequena atitude diária para o pilar ${targetPillar}`
         : `Revisar e manter as boas práticas no pilar ${targetPillar}`
 

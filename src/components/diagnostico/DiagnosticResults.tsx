@@ -59,6 +59,19 @@ export function DiagnosticResults({ result, history, onBack }: Props) {
             >
               Status: {result.status}
             </span>
+            <span
+              className={cn(
+                'inline-flex items-center justify-center px-6 py-2 rounded-full border font-bold text-lg tracking-wide',
+                statusColor,
+              )}
+            >
+              Ação:{' '}
+              {result.status === 'Inhaca Mental Severa'
+                ? 'Foco total em fechar o parêntese.'
+                : result.status === 'Fase de Transição'
+                  ? 'Criar plano de ação (Colchetes).'
+                  : 'Manutenção e vigilância (Chaves).'}
+            </span>
             {evolution.prevScore !== null && (
               <span
                 className={cn(
