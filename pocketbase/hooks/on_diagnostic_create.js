@@ -4,8 +4,10 @@ onRecordCreateRequest((e) => {
 
   let totalFavorable = 0
   const pillarScores = {}
+  let pillarCount = 0
 
   for (const pillar in answers) {
+    pillarCount++
     const pAnswers = answers[pillar]
     let pFav = 0
     for (const q in pAnswers) {
@@ -46,14 +48,29 @@ onRecordCreateRequest((e) => {
   let aiFeedback = `Análise do seu diagnóstico concluída. Baseado nas suas respostas, seu status atual é: **${status}**.\n\n`
   aiFeedback += `Ação recomendada geral: **${actionPlan}**\n\n`
 
-  if (worstPillar) {
-    aiFeedback += `O pilar que mais precisa de atenção no momento é **${worstPillar}** (com apenas ${worstScore}/8 pontos positivos).\n\n`
-    aiFeedback += `**Micro-ações recomendadas para ${worstPillar}:**\n`
-    aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
-    aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
-    aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
+  if (pillarCount === 1) {
+    const singlePillar = Object.keys(pillarScores)[0]
+    const singleScore = pillarScores[singlePillar]
+
+    if (singleScore <= 5) {
+      aiFeedback += `Avaliando o pilar **${singlePillar}**, você está com apenas ${singleScore}/8 pontos positivos.\n\n`
+      aiFeedback += `**Micro-ações recomendadas para ${singlePillar}:**\n`
+      aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
+      aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
+      aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
+    } else {
+      aiFeedback += `O pilar **${singlePillar}** apresenta uma pontuação satisfatória, com ${singleScore}/8 pontos positivos. Continue com a manutenção e vigilância constante.`
+    }
   } else {
-    aiFeedback += `Todos os pilares analisados apresentam uma pontuação satisfatória. Continue com a manutenção e vigilância constante das suas áreas da vida.`
+    if (worstScore <= 5) {
+      aiFeedback += `O pilar que merece mais atenção no momento é **${worstPillar}** com ${worstScore}/8 de favoráveis.\n\n`
+      aiFeedback += `**Micro-ações recomendadas para ${worstPillar}:**\n`
+      aiFeedback += `- Identifique uma pequena atitude diária que possa melhorar este pilar.\n`
+      aiFeedback += `- Reserve 15 minutos do seu dia para refletir sobre as barreiras que estão impedindo o seu avanço.\n`
+      aiFeedback += `- Converse com alguém de confiança sobre suas dificuldades nesta área.`
+    } else {
+      aiFeedback += `Todos os pilares analisados apresentam uma pontuação satisfatória. Continue com a manutenção e vigilância constante das suas áreas da vida.`
+    }
   }
 
   e.record.set('score', score)
