@@ -1,7 +1,13 @@
 export function calculateDiagnosticScore(answers: Record<string, Record<string, string>>) {
   if (!answers || Object.keys(answers).length === 0) {
     console.warn('calculateDiagnosticScore received empty answers object')
-    return { score: 0, breakdown: {}, answeredPillars: 0 }
+    return {
+      score: 0,
+      scorePercent: 0,
+      status: 'Inhaca Mental Severa',
+      breakdown: {},
+      totalQuestions: 0,
+    }
   }
 
   const normalize = (str: string) => {
@@ -13,7 +19,7 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
   }
 
   const breakdown: Record<string, number> = {}
-  let totalScore = 0
+  let totalFavorable = 0
   let pillarCount = 0
 
   for (const [pillar, questions] of Object.entries(answers)) {
@@ -30,20 +36,31 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
       }
     }
 
-    const pillarScore = Math.round((countFavorable / 8) * 100)
-    breakdown[pillar] = pillarScore
-    totalScore += pillarScore
+    breakdown[pillar] = countFavorable
+    totalFavorable += countFavorable
     pillarCount++
   }
 
-  const score = pillarCount > 0 ? Math.round(totalScore / pillarCount) : 0
+  const totalQuestions = pillarCount * 8
+  const scorePercent = totalQuestions > 0 ? Math.round((totalFavorable / totalQuestions) * 100) : 0
 
-  const result = {
-    score,
-    breakdown,
-    answeredPillars: pillarCount,
+  let status = 'Inhaca Mental Severa'
+  if (scorePercent >= 75) {
+    status = 'Leão Dourado'
+  } else if (scorePercent >= 50) {
+    status = 'Caminho do Despertar'
+  } else if (scorePercent >= 25) {
+    status = 'Equilíbrio em Risco'
   }
 
-  console.log('Computed diagnostic score:', result)
+  const result = {
+    score: totalFavorable,
+    scorePercent,
+    status,
+    breakdown,
+    totalQuestions,
+  }
+
+  console.log('Diagnostic score computed', result)
   return result
 }

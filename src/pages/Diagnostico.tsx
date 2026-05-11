@@ -50,15 +50,16 @@ export default function Diagnostico() {
     if (!user) return
     setIsSubmitting(true)
     try {
-      const { score, breakdown } = calculateDiagnosticScore(answers)
-      console.log('Diagnostic result:', { score, breakdown })
+      const scoring = calculateDiagnosticScore(answers)
+      console.log('Diagnostic scoring result', scoring)
 
       const record = await createDiagnostic({
         user_id: user.id,
         pillar_type: selectedPillar,
         answers,
-        score,
-        breakdown,
+        score: scoring.score,
+        status: scoring.status,
+        breakdown: scoring.breakdown,
       })
       setCurrentResult(record)
       setMode('results')

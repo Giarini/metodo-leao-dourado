@@ -7,8 +7,8 @@ export interface DiagnosticRecord {
   answers: Record<string, any>
   score?: number
   breakdown?: Record<string, number>
-  status: string
-  ai_feedback: string
+  status?: string
+  ai_feedback?: string
   created: string
   updated: string
 }
@@ -18,6 +18,7 @@ export const createDiagnostic = (data: {
   pillar_type: string
   answers: Record<string, any>
   score?: number
+  status?: string
   breakdown?: Record<string, number>
 }) => pb.collection('diagnostics').create<DiagnosticRecord>(data)
 
