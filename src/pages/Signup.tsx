@@ -56,7 +56,18 @@ export default function Signup() {
     if (error) {
       const extracted = extractFieldErrors(error)
       if (Object.keys(extracted).length > 0) {
-        setFieldErrors(extracted)
+        const translated: Record<string, string> = {}
+        for (const [key, msg] of Object.entries(extracted)) {
+          let tMsg = msg
+          const lowerMsg = msg.toLowerCase()
+          if (lowerMsg.includes('already in use')) tMsg = 'Este e-mail já está em uso.'
+          else if (lowerMsg.includes('too short')) tMsg = 'A senha é muito curta.'
+          else if (lowerMsg.includes('blank') || lowerMsg.includes('required'))
+            tMsg = 'Campo obrigatório.'
+          else if (lowerMsg.includes('invalid')) tMsg = 'Valor inválido.'
+          translated[key] = tMsg
+        }
+        setFieldErrors(translated)
         setErrorMsg('Por favor, corrija os erros nos campos abaixo.')
       } else {
         const msg = getErrorMessage(error)
@@ -68,7 +79,7 @@ export default function Signup() {
         } else if (msg.toLowerCase().includes('blank') || msg.toLowerCase().includes('required')) {
           setErrorMsg('Preencha todos os campos obrigatórios.')
         } else {
-          setErrorMsg(msg || 'Ocorreu um erro ao criar a conta. Tente novamente.')
+          setErrorMsg('Ocorreu um erro ao criar a conta. Verifique os dados e tente novamente.')
         }
       }
     } else {
