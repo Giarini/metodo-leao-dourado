@@ -1,4 +1,4 @@
-onRecordCreateRequest((e) => {
+onRecordCreate((e) => {
   try {
     const record = e.record
     let answers = record.get('answers') || {}
@@ -20,7 +20,6 @@ onRecordCreateRequest((e) => {
 
     let totalFavorable = 0
     let totalQuestions = 0
-    let numberOfPillars = 0
     const breakdown = {}
 
     for (const pillar in answers) {
@@ -28,6 +27,7 @@ onRecordCreateRequest((e) => {
 
       const pAnswers = answers[pillar]
       let pillarFavorable = 0
+      let pillarQuestions = 0
 
       for (const q in pAnswers) {
         if (q.startsWith('_')) continue
@@ -35,54 +35,43 @@ onRecordCreateRequest((e) => {
         if (val === 'favoravel' || val === 'sim') {
           pillarFavorable++
         }
+        pillarQuestions++
       }
 
       totalFavorable += pillarFavorable
-      numberOfPillars++
+      totalQuestions += pillarQuestions
       breakdown[pillar] = pillarFavorable
     }
 
-    if (numberOfPillars === 0) {
-      numberOfPillars = 1
-    }
-
-    totalQuestions = numberOfPillars * 8
-    const scorePercent = Math.round((totalFavorable / totalQuestions) * 100)
+    const scorePercent =
+      totalQuestions > 0 ? Math.round((totalFavorable / totalQuestions) * 100) : 0
 
     let status = ''
-    let actionPhrase = ''
-    let interpretation = ''
+    let actionPlan = ''
+    let neuroExplanation = ''
 
-    if (scorePercent < 25) {
+    if (scorePercent < 33) {
       status = 'Inhaca Mental Severa'
-      actionPhrase = 'Foco total em fechar o parêntese'
-      interpretation =
-        'Essa pontuação indica possível excesso crônico de cortisol refletindo alto estresse e esgotamento mental. O foco deve ser na redução de estímulos negativos e recuperação do equilíbrio basal.'
-    } else if (scorePercent < 50) {
-      status = 'Equilibrio em Risco'
-      actionPhrase = 'Reforçar hábitos básicos e identificar gatilhos'
-      interpretation =
-        'Pontos de atenção presentes neste pilar com sinais de desgaste. Recomendado fortalecer rotinas e remover atritos antes que se agrave.'
-    } else if (scorePercent < 75) {
-      status = 'Caminho do Despertar'
-      actionPhrase = 'Consolidar avanços e remover atritos restantes'
-      interpretation =
-        'Bons sinais neste pilar com espaço claro para evolução. O foco deve ser refinar o que já funciona e atacar pontos específicos.'
+      actionPlan = 'Foco total em fechar o parêntese'
+      neuroExplanation = 'Essa pontuação indica um possível excesso crônico de cortisol...'
+    } else if (scorePercent < 66) {
+      status = 'Fase de Transição'
+      actionPlan = 'Criar plano de ação (Colchetes)'
+      neuroExplanation = 'Sua rede neural está em reorganização...'
     } else {
-      status = 'Leao Dourado'
-      actionPhrase = 'Manter o ritmo e elevar o padrão'
-      interpretation =
-        'Pilar em alta performance. Sustentar os hábitos atuais e usar este pilar como alavanca para os demais.'
+      status = 'Vida Equilibrada'
+      actionPlan = 'Manutenção e vigilância (Chaves)'
+      neuroExplanation = 'Excelente tônus dopaminérgico...'
     }
 
     const targetPillar = record.get('pillar_type') || Object.keys(breakdown)[0] || 'geral'
 
     const aiFeedback =
-      `Análise do seu diagnóstico para o pilar ${targetPillar} concluída\n` +
-      `Pontuação ${totalFavorable}/${totalQuestions} pontos positivos\n` +
-      `Status Atual: ${status}\n` +
-      `Ação Recomendada: ${actionPhrase}\n` +
-      `${interpretation}`
+      `- Análise do seu diagnóstico para o pilar ${targetPillar} concluída.\n` +
+      `- Pontuação: ${totalFavorable}/${totalQuestions} pontos positivos.\n` +
+      `- Status Atual: ${status}\n` +
+      `- Ação Recomendada: ${actionPlan}\n` +
+      `- ${neuroExplanation}`
 
     record.set('score', totalFavorable)
     record.set('status', status)
@@ -92,7 +81,7 @@ onRecordCreateRequest((e) => {
     $app
       .logger()
       .info(
-        `on_diagnostic_create computed ${targetPillar} ${totalFavorable} ${totalQuestions} ${scorePercent} ${status}`,
+        `on_diagnostic_create computed ${targetPillar} ${totalFavorable}/${totalQuestions} ${scorePercent}% ${status}`,
       )
   } catch (error) {
     $app.logger().error('on_diagnostic_create error', 'msg', error.message)

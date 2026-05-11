@@ -20,37 +20,37 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
 
   const breakdown: Record<string, number> = {}
   let totalFavorable = 0
-  let pillarCount = 0
+  let totalQuestions = 0
 
   for (const [pillar, questions] of Object.entries(answers)) {
     if (pillar.startsWith('_') || !questions || typeof questions !== 'object') continue
 
     let countFavorable = 0
+    let countQuestions = 0
 
-    for (const answer of Object.values(questions)) {
+    for (const [qKey, answer] of Object.entries(questions)) {
+      if (qKey.startsWith('_')) continue
       if (typeof answer !== 'string') continue
 
       const normAnswer = normalize(answer)
-      if (normAnswer === 'favoravel') {
+      if (normAnswer === 'favoravel' || normAnswer === 'sim') {
         countFavorable++
       }
+      countQuestions++
     }
 
     breakdown[pillar] = countFavorable
     totalFavorable += countFavorable
-    pillarCount++
+    totalQuestions += countQuestions
   }
 
-  const totalQuestions = pillarCount * 8
   const scorePercent = totalQuestions > 0 ? Math.round((totalFavorable / totalQuestions) * 100) : 0
 
   let status = 'Inhaca Mental Severa'
-  if (scorePercent >= 75) {
-    status = 'Leão Dourado'
-  } else if (scorePercent >= 50) {
-    status = 'Caminho do Despertar'
-  } else if (scorePercent >= 25) {
-    status = 'Equilíbrio em Risco'
+  if (scorePercent >= 66) {
+    status = 'Vida Equilibrada'
+  } else if (scorePercent >= 33) {
+    status = 'Fase de Transição'
   }
 
   const result = {
