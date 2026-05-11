@@ -1,4 +1,9 @@
 export function calculateDiagnosticScore(answers: Record<string, Record<string, string>>) {
+  if (!answers || Object.keys(answers).length === 0) {
+    console.warn('calculateDiagnosticScore received empty answers object')
+    return { score: 0, breakdown: {}, answeredPillars: 0 }
+  }
+
   const normalize = (str: string) => {
     return str
       .toLowerCase()
@@ -14,32 +19,18 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
   for (const [pillar, questions] of Object.entries(answers)) {
     if (pillar.startsWith('_') || !questions || typeof questions !== 'object') continue
 
-    let pillarPoints = 0
-    let maxPillarPoints = 0
+    let countFavorable = 0
 
     for (const answer of Object.values(questions)) {
       if (typeof answer !== 'string') continue
 
       const normAnswer = normalize(answer)
-
-      let points = 0
-      if (normAnswer === 'sim' || normAnswer.includes('sim')) {
-        points = 10
-      } else if (
-        normAnswer.includes('as vezes') ||
-        normAnswer.includes('as_vezes') ||
-        normAnswer.includes('parcialmente')
-      ) {
-        points = 5
-      } else if (normAnswer === 'nao' || normAnswer.includes('nao')) {
-        points = 0
+      if (normAnswer === 'favoravel') {
+        countFavorable++
       }
-
-      pillarPoints += points
-      maxPillarPoints += 10
     }
 
-    const pillarScore = maxPillarPoints > 0 ? Math.round((pillarPoints / maxPillarPoints) * 100) : 0
+    const pillarScore = Math.round((countFavorable / 8) * 100)
     breakdown[pillar] = pillarScore
     totalScore += pillarScore
     pillarCount++
@@ -47,9 +38,12 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
 
   const score = pillarCount > 0 ? Math.round(totalScore / pillarCount) : 0
 
-  return {
+  const result = {
     score,
     breakdown,
-    timestamp: new Date().toISOString(),
+    answeredPillars: pillarCount,
   }
+
+  console.log('Computed diagnostic score:', result)
+  return result
 }
