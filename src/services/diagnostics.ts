@@ -4,7 +4,7 @@ export interface DiagnosticRecord {
   id: string
   user_id: string
   pillar_type: string
-  answers: Record<string, Record<string, string>>
+  answers: Record<string, any>
   score: number
   status: string
   ai_feedback: string
@@ -15,7 +15,8 @@ export interface DiagnosticRecord {
 export const createDiagnostic = (data: {
   user_id: string
   pillar_type: string
-  answers: Record<string, Record<string, string>>
+  answers: Record<string, any>
+  score?: number
 }) => pb.collection('diagnostics').create<DiagnosticRecord>(data)
 
 export const getDiagnostics = () =>
