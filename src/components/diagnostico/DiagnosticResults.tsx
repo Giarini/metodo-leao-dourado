@@ -58,7 +58,9 @@ export function DiagnosticResults({ result, history, onBack }: Props) {
               )}
             >
               Pontuação: {result.score ?? 0} de{' '}
-              {Object.keys(result.answers || {}).filter((k) => !k.startsWith('_')).length * 8}
+              {Object.keys(result.answers || {}).filter(
+                (k) => !k.startsWith('_') && k !== 'marshalJSON' && k !== 'scan',
+              ).length * 8}
             </span>
             <span
               className={cn(
@@ -78,8 +80,8 @@ export function DiagnosticResults({ result, history, onBack }: Props) {
               {result.status === 'Inhaca Mental Severa'
                 ? 'Foco total em fechar o parêntese'
                 : result.status === 'Fase de Transição'
-                  ? 'Criar plano de ação (Colchetes)'
-                  : 'Manutenção e vigilância (Chaves)'}
+                  ? 'Criar plano de ação em colchetes'
+                  : 'Manutenção e vigilância em chaves'}
             </span>
             {evolution.prevScore !== null && (
               <span

@@ -27,7 +27,6 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
     if (pillar.startsWith('_') || !questions || typeof questions !== 'object') continue
 
     let countFavorable = 0
-    let countQuestions = 0
 
     for (const [qKey, answer] of Object.entries(questions)) {
       if (qKey.startsWith('_')) continue
@@ -37,14 +36,13 @@ export function calculateDiagnosticScore(answers: Record<string, Record<string, 
       if (normAnswer === 'favoravel' || normAnswer === 'sim') {
         countFavorable++
       }
-      countQuestions++
     }
 
     breakdown[pillar] = countFavorable
     totalFavorable += countFavorable
-    totalQuestions += countQuestions
   }
 
+  totalQuestions = Object.keys(breakdown).length * 8
   const scorePercent = totalQuestions > 0 ? Math.round((totalFavorable / totalQuestions) * 100) : 0
 
   let status = 'Inhaca Mental Severa'
