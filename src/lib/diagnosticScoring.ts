@@ -1,3 +1,4 @@
+/** @deprecated This function is no longer used because the PocketBase hook is the authoritative source. */
 export function calculateDiagnosticScore(answers: Record<string, Record<string, string>>) {
   if (!answers || Object.keys(answers).length === 0) {
     console.warn('calculateDiagnosticScore received empty answers object')

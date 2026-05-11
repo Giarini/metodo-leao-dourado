@@ -17,9 +17,6 @@ export const createDiagnostic = (data: {
   user_id: string
   pillar_type: string
   answers: Record<string, any>
-  score?: number
-  status?: string
-  breakdown?: Record<string, number>
 }) => pb.collection('diagnostics').create<DiagnosticRecord>(data)
 
 export const getDiagnostics = () =>

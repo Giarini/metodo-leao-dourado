@@ -57,7 +57,16 @@ export function DiagnosticResults({ result, history, onBack }: Props) {
                 statusColor,
               )}
             >
-              Status: {result.status}
+              Pontuação: {result.score ?? 0} de{' '}
+              {Object.keys(result.answers || {}).filter((k) => !k.startsWith('_')).length * 8}
+            </span>
+            <span
+              className={cn(
+                'inline-flex items-center justify-center px-6 py-2 rounded-full border font-bold text-lg tracking-wide',
+                statusColor,
+              )}
+            >
+              Status: {result.status || 'Calculando...'}
             </span>
             <span
               className={cn(
@@ -98,7 +107,7 @@ export function DiagnosticResults({ result, history, onBack }: Props) {
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           <div className="prose prose-invert max-w-none space-y-5">
-            {result.ai_feedback.split('\n').map((para, i) => {
+            {(result.ai_feedback || '').split('\n').map((para, i) => {
               if (!para.trim()) return null
               if (para.startsWith('- ')) {
                 return (

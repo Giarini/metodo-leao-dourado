@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast'
 import { DiagnosticMenu } from '@/components/diagnostico/DiagnosticMenu'
 import { DiagnosticQuestionnaire } from '@/components/diagnostico/DiagnosticQuestionnaire'
 import { DiagnosticResults } from '@/components/diagnostico/DiagnosticResults'
-import { calculateDiagnosticScore } from '@/lib/diagnosticScoring'
 
 export default function Diagnostico() {
   const { user } = useAuth()
@@ -50,16 +49,10 @@ export default function Diagnostico() {
     if (!user) return
     setIsSubmitting(true)
     try {
-      const scoring = calculateDiagnosticScore(answers)
-      console.log('Diagnostic scoring result', scoring)
-
       const record = await createDiagnostic({
         user_id: user.id,
         pillar_type: selectedPillar,
         answers,
-        score: scoring.score,
-        status: scoring.status,
-        breakdown: scoring.breakdown,
       })
       setCurrentResult(record)
       setMode('results')
